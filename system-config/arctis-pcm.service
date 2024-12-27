@@ -1,8 +1,9 @@
 [Unit]
 Description=Arctis ChatMix
+
 Requisite=dev-arctischatmix.device
-BindsTo=dev-arctischatmix.device
 After=dev-arctischatmix.device
+
 StartLimitIntervalSec=1m
 StartLimitBurst=5
 

@@ -226,8 +226,11 @@ class ArctisChatMixDaemon:
                 os.system(f'pactl set-sink-volume Arctis_Chat {virtual_device_volume}')
             except Exception as e:
                 if not isinstance(e, usb.core.USBTimeoutError):
-                    self.log.error(f'Failed to manage input data.', exc_info=True)
-                    self.die_gracefully(error_phase="USB input management")
+                    if isinstance(e, usb.core.USBError) and e.errno == 19:  # device not found
+                        self.die_gracefully()
+                    else:
+                        self.log.error(f'Failed to manage input data.', exc_info=True)
+                        self.die_gracefully(error_phase="USB input management")
 
     def __handle_sigterm(self, sig, frame):
         self.log.info('Received shutdown signal, shutting down.')
