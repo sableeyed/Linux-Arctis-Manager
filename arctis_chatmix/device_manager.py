@@ -83,8 +83,9 @@ class DeviceManager(ABC):
         '''
         Ensure that the kernel driver is detached for all the interfaces we need to access in I/O
         '''
-        for ie in self.get_endpoint_addresses_to_listen():
-            interface = self.device[0].interfaces()[ie.interface]
+        interfaces = list(set([ie.interface for ie in self.get_endpoint_addresses_to_listen()]))
+        for interface in interfaces:
+            interface = self.device[0].interfaces()[interface]
             interface_num = interface.bInterfaceNumber
 
             if self.device.is_kernel_driver_active(interface_num):
