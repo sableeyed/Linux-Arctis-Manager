@@ -14,4 +14,4 @@ if __name__ == '__main__':
 
     daemon = ArctisChatMixDaemon(log_level=logging.DEBUG if args.verbose else logging.INFO)
 
-    asyncio.run(daemon.start('1.0'))
+    asyncio.run(daemon.start('1.1'))
