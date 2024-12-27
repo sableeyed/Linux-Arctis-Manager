@@ -8,7 +8,8 @@ StartLimitBurst=5
 
 [Service]
 Type=exec
-ExecStart=/usr/bin/python3 %h/.local/bin/Arctis_ChatMix.py
+WorkingDirectory=%h/.local/bin
+ExecStart=/usr/bin/python3 %h/.local/bin/arctis_chatmix.py
 Restart=on-failure
 RestartSec=1
 

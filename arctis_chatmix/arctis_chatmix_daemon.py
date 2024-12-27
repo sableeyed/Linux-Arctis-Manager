@@ -1,0 +1,257 @@
+import asyncio
+import inspect
+import logging
+import os
+import pkgutil
+import re
+import signal
+import subprocess
+import sys
+
+import usb.core
+
+from arctis_chatmix.device_manager import DeviceManager, InterfaceEndpoint
+
+PA_GAME_NODE_NAME = 'Arctis_Game'
+PA_CHAT_NODE_NAME = 'Arctis_Chat'
+
+
+class ArctisChatMixDaemon:
+    log: logging.Logger
+
+    device: usb.core.Device
+
+    device_manager: DeviceManager
+    device_managers: list[DeviceManager]
+
+    listeners: list[asyncio.Task]
+
+    previous_sink: str
+
+    _shutdown: bool
+    _shutting_down: bool
+
+    def __init__(self, log_level: int = logging.INFO):
+        self.setup_logger(log_level)
+
+        self.device = None
+
+        self.device_manager = None
+        self.device_managers = []
+
+        self.listeners = []
+        self._shutdown = False
+        self._shutting_down = False
+
+    def setup_logger(self, log_level: int):
+        self.log = logging.getLogger('Daemon')
+        self.log.setLevel(log_level)
+
+    def load_device_managers(self):
+        # Dynamically instantiate the device managers
+        for _, name, _ in pkgutil.iter_modules(['arctis_chatmix/devices']):
+            module = __import__(f'arctis_chatmix.devices.{name}', fromlist=[name])
+            for _, cls in inspect.getmembers(module, inspect.isclass):
+                if issubclass(cls, DeviceManager) and cls is not DeviceManager:
+                    self.register_device(cls())
+
+    def register_device(self, device: DeviceManager):
+        if next((
+            d for d in self.device_managers
+            if d.get_device_product_id() == device.get_device_product_id()
+            and d.get_device_vendor_id() == device.get_device_vendor_id()
+        ), None) is None:
+            self.log.debug(f'Registering device "{device.get_device_name()}"')
+            self.device_managers.append(device)
+
+    def cleanup_pulseaudio_nodes(self):
+        # Blindly try to cleanup dirty nodes by removing the ones we're going to create
+        self.log.debug('Cleaning up PulseAudio nodes.')
+        try:
+            os.system(f'pw-cli destroy {PA_GAME_NODE_NAME} 1>/dev/null 2>&1')
+            os.system(f'pw-cli destroy {PA_CHAT_NODE_NAME} 1>/dev/null 2>&1')
+        finally:
+            pass
+
+    def register_pulseaudio_nodes(self) -> None:
+        self.cleanup_pulseaudio_nodes()
+
+        # Create the game and chat nodes
+        self.log.info('Creating PulseAudio Audio/Sink nodes.')
+        try:
+            os.system(f"""pw-cli create-node adapter '{{
+                factory.name=support.null-audio-sink
+                node.name=Arctis_Game
+                node.description="{self.device_manager.get_device_name()} Game"
+                media.class=Audio/Sink
+                monitor.channel-volumes=true
+                object.linger=true
+                audio.position=[{' '.join([p.value for p in self.device_manager.get_audio_position()])}]
+                }}' 1>/dev/null
+            """)
+
+            os.system(f"""pw-cli create-node adapter '{{
+                factory.name=support.null-audio-sink
+                node.name=Arctis_Chat
+                node.description="{self.device_manager.get_device_name()} Chat"
+                media.class=Audio/Sink
+                monitor.channel-volumes=true
+                object.linger=true
+                audio.position=[{' '.join([p.value for p in self.device_manager.get_audio_position()])}]
+                }}' 1>/dev/null
+            """)
+        except Exception as e:
+            self.log.error('Failed to create PulseAudio nodes.', exc_info=True)
+            sys.exit(2)
+
+        default_sink = None
+
+        self.log.debug('Getting Arctis sink.')
+        try:
+            pactl_short_sinks = os.popen("pactl list short sinks").readlines()
+            # grab any elements from list of pactl sinks that are Arctis
+            arctis = re.compile('.*[aA]rctis.*')
+            arctis_sink = list(filter(arctis.match, pactl_short_sinks))[0]
+
+            # split the arctis line on tabs (which form table given by 'pactl short sinks')
+            tabs_pattern = re.compile(r'\t')
+            tabs_re = re.split(tabs_pattern, arctis_sink)
+
+            # skip first element of tabs_re (sink's ID which is not persistent)
+            arctis_device = tabs_re[1]
+            self.log.debug(f"Arctis sink identified as {arctis_device}")
+            default_sink = arctis_device
+        except Exception as e:
+            self.log.error('Failed to get default sink.', exc_info=True)
+            sys.exit(3)
+
+        self.log.info('Setting PulseAudio channel links.')
+        try:
+            for position in self.device_manager.get_audio_position():
+                pos_name = position.value
+                self.log.debug(f'Setting "{PA_GAME_NODE_NAME}:monitor_{pos_name}" > "{default_sink}:playback_{pos_name}"')
+
+                os.system(f'pw-link "{PA_GAME_NODE_NAME}:monitor_{pos_name}" "{default_sink}:playback_{pos_name}" 1>/dev/null')
+        except Exception as e:
+            self.log.error(f'Failed to set {PA_GAME_NODE_NAME}\'s audio positions.', exc_info=True)
+            sys.exit(4)
+
+    def set_default_audio_sink(self) -> None:
+        self.log.info(f'Setting PulseAudio\'s default sink to {PA_GAME_NODE_NAME}.')
+        self.previous_sink = subprocess.check_output(['pactl', 'get-default-sink']).decode('utf-8').strip()
+        self.set_pa_audio_sink(PA_GAME_NODE_NAME)
+
+    def set_pa_audio_sink(self, sink: str) -> None:
+        os.system(f'pactl set-default-sink {sink}')
+
+    async def start(self, version):
+        self.log.info('-------------------------------')
+        self.log.info('- Arctis ChatMix is starting. -')
+        self.log.info(f'-                      v {version}  -')
+        self.log.info('-------------------------------')
+
+        self.log.info('Registering supported devices.')
+        self.load_device_managers()
+
+        # Identify the (first) compatible device
+        self.log.debug('Identifying Arctis device.')
+        for manager in self.device_managers:
+            try:
+                self.device = usb.core.find(idVendor=manager.get_device_vendor_id(), idProduct=manager.get_device_product_id())
+                if self.device is not None:
+                    self.device_manager = manager
+                    # very important, otherwise the manager won't be able to communicate to the device at init stage
+                    self.device_manager.set_device(self.device)
+                    # Detach the kernel drivers for the interfaces we need to access in I/O (otherwise the interface will be busy and we'll not be able to read/write into them)
+                    self.device_manager.kernel_detach()
+                    self.log.info(f'Identified device: {self.device_manager.get_device_name()}.')
+                    break
+            finally:
+                pass
+
+        if self.device is None:
+            self.log.error(f'''Failed to identify the Arctis device. Please ensure it is connected.
+                           Compatible devices are: {', '.join([d.get_device_name() for d in self.device_managers])}''')
+
+            sys.exit(1)
+
+        # Register the sigint / sigterm handler
+        signal.signal(signal.SIGINT, self.__handle_sigterm)
+        signal.signal(signal.SIGTERM, self.__handle_sigterm)
+
+        self.log.debug('Initializing device.')
+        for interface_endpoint in self.device_manager.get_endpoint_addresses_to_listen():
+            if self.device.is_kernel_driver_active(interface_endpoint.interface):
+                self.device.detach_kernel_driver(interface_endpoint.interface)
+        self.device_manager.init_device()
+
+        self.log.info('Registering PulseAudio nodes.')
+        self.register_pulseaudio_nodes()
+
+        self.set_default_audio_sink()
+
+        for interface_endpoint in self.device_manager.get_endpoint_addresses_to_listen():
+            interface = interface_endpoint.interface
+            endpoint = interface_endpoint.endpoint
+
+            self.log.info(f"Starting to listen on device's {interface:02d}.{endpoint:02d}.")
+            self.listeners.append(asyncio.create_task(self.listen_usb_endpoint(interface_endpoint)))
+
+        await asyncio.gather(*self.listeners)
+
+    @staticmethod
+    def _normalize_audio(volume, mix):
+        return int(round((volume * mix) * 100, 0))
+
+    async def listen_usb_endpoint(self, interface_endpoint: InterfaceEndpoint):
+        try:
+            # interface index of the USB HID for the ChatMix dial might differ from the interface number on the device itself
+            self.interface: usb.core.Interface = self.device[0].interfaces()[interface_endpoint.interface]
+            self.interface_num = self.interface.bInterfaceNumber
+            self.endpoint = self.interface.endpoints()[interface_endpoint.endpoint]
+            self.addr = self.endpoint.bEndpointAddress
+        except Exception:
+            self.log.error(f'Unable to find interface {interface_endpoint.interface} / endpoint {interface_endpoint.endpoint}.', exc_info=True)
+            self.die_gracefully(error_phase="identification of USB endpoint")
+
+        while not self._shutdown:
+            try:
+                read_input = self.device.read(self.addr, 64)
+                chatmix_state = self.device_manager.manage_input_data(read_input, interface_endpoint)
+
+                default_device_volume = "{}%".format(self._normalize_audio(chatmix_state.game_volume, chatmix_state.game_mix))
+                virtual_device_volume = "{}%".format(self._normalize_audio(chatmix_state.chat_volume, chatmix_state.chat_mix))
+
+                os.system(f'pactl set-sink-volume Arctis_Game {default_device_volume}')
+                os.system(f'pactl set-sink-volume Arctis_Chat {virtual_device_volume}')
+            except Exception as e:
+                if not isinstance(e, usb.core.USBTimeoutError):
+                    self.log.error(f'Failed to manage input data.', exc_info=True)
+                    self.die_gracefully(error_phase="USB input management")
+
+    def __handle_sigterm(self, sig, frame):
+        self.log.info('Received shutdown signal, shutting down.')
+
+        self.die_gracefully()
+
+    def die_gracefully(self, error_phase: str = None):
+        if self._shutting_down:
+            return
+
+        self._shutting_down = True
+        self._die_gracefully_actuator(error_phase)
+
+    def _die_gracefully_actuator(self, error_phase: str) -> None:
+        if error_phase:
+            self.log.error(f'Shutting down due to error in: {error_phase}')
+
+        self.log.debug('Setting shutdown flag.')
+        self._shutdown = True
+        self.log.info('Removing PulseAudio nodes.')
+        self.cleanup_pulseaudio_nodes()
+        self.log.info('Restoring previous PulseAudio sink.')
+        self.set_pa_audio_sink(self.previous_sink)
+
+        self.log.info('------------------------------')
+        self.log.info('- Arctis ChatMix is stopped. -')
+        self.log.info('------------------------------')

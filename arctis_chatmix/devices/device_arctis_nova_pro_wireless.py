@@ -1,41 +1,24 @@
-from logging import Logger
-import math
-
-import usb.core
-
-from arctis_devices.device_manager import DeviceManager
-from arctis_devices.udev_device import UdevDevice
+from arctis_chatmix.device_manager import ChatMixState, DeviceManager, InterfaceEndpoint
 
 
-class ArctisNovaProWireless(DeviceManager):
-    volume: float
+class ArctisNovaProWirelessDevice(DeviceManager):
+    game_mix: int = None
+    chat_mix: int = None
 
-    game_mix: int
-    chat_mix: int
+    def get_device_name(self):
+        return 'Arctis Nova Pro Wireless'
 
-    _instance: 'ArctisNovaProWireless' = None
+    def get_device_product_id(self):
+        return 0x12e0
 
-    @staticmethod
-    def getInstance():
-        if ArctisNovaProWireless._instance is None:
-            ArctisNovaProWireless._instance = ArctisNovaProWireless()
-        return ArctisNovaProWireless._instance
+    def get_endpoint_addresses_to_listen(self) -> list[InterfaceEndpoint]:
+        return [
+            InterfaceEndpoint(6, 0),
+            InterfaceEndpoint(7, 0),
+            InterfaceEndpoint(7, 1),
+        ]
 
-    def __init__(self):
-        self.game_mix = 100  # Default to equally mixed (should be set during interface configuration)
-        self.chat_mix = 100  # Default to equally mixed (should be set during interface configuration)
-
-    @staticmethod
-    def get_udev_device() -> UdevDevice:
-        return UdevDevice('Arctis Nova Pro Wireless', 0x1038, 0x12e0, 7, ['FL', 'FR'],
-                          ArctisNovaProWireless.manage_chatmix_input_data, ArctisNovaProWireless.init_device)
-
-    @staticmethod
-    def packet_0_filler(packet: list[int], size: int):
-        return [*packet, *[0 for _ in range(size - len(packet))]]
-
-    @staticmethod
-    def init_device(device: usb.core.Device, logger: Logger):
+    def init_device(self):
         '''
         Initializes the GameDAC Gen2, enabling the mixer.
         Kinda obscure, but seems to work on my machine (tm).
@@ -97,26 +80,36 @@ class ArctisNovaProWireless(DeviceManager):
         ]
 
         # 8th interface, 2nd endpoint. The 1st one is for receiving data from the DAC
-        commands_endpoint_address = device[0].interfaces()[7].endpoints()[1].bEndpointAddress
+        commands_endpoint_address = self.device[0].interfaces()[7].endpoints()[1].bEndpointAddress
+
+        if self.device.is_kernel_driver_active(commands_endpoint_address):
+            self.device.detach_kernel_driver(commands_endpoint_address)
 
         for command in commands:
-            device.write(commands_endpoint_address, ArctisNovaProWireless.packet_0_filler(command[0], 91))
+            self.device.write(commands_endpoint_address, self.packet_0_filler(command[0], 91))
             # Ignore the responses for now, as I haven't figured out yet their significance.
 
+    def manage_input_data(self, data: list[int], endpoint: InterfaceEndpoint) -> ChatMixState:
+        volume = 1
+        device_connected = True  # TODO get it from GameDAC
+
+        if endpoint == InterfaceEndpoint(7, 0):
+            # Volume control is managed by the GameDAC
+            if data[0] == 0x07 and data[1] == 0x25:
+                # Volume is data[2]. If needed for any other purpose, it ranges between -56 (0%) and 0 (100%).
+                pass
+
+            elif data[0] == 0x07 and data[1] == 0x45:
+                self.game_mix = data[2] / 100  # Ranges from 0 to 100
+                self.chat_mix = data[3] / 100  # Ranges from 0 to 100
+            else:
+                self.log.debug(f'Incoming data from {endpoint.interface}, {endpoint.endpoint}: {data}')
+        else:
+            # TODO find out a way to know if the device is connected
+            self.log.debug(f'Incoming data from {endpoint.interface}, {endpoint.endpoint}: {data}')
+
+        return ChatMixState(volume, volume, self.game_mix if self.game_mix is not None else 1, self.chat_mix if self.chat_mix is not None else 1, device_connected)
+
     @staticmethod
-    def manage_chatmix_input_data(data: list[int]) -> tuple[int, int]:
-        manager = ArctisNovaProWireless.getInstance()
-
-        # Volume control is managed by the GameDAC
-        if data[0] == 0x07 and data[1] == 0x25:
-            # Volume is data[2], if needed for any purpose (which ranges from -56 (0%) to 0 (100%))
-            pass
-
-        elif data[0] == 0x07 and data[1] == 0x45:
-            manager.game_mix = data[2]  # Ranges from 0 to 100
-            manager.chat_mix = data[3]  # Ranges from 0 to 100
-
-        # The volume is managed by the GameDAC directly, so we only need to set the mix
-
-        return int(round(manager.game_mix if manager.game_mix is not None else 100, 0)), \
-            int(round(manager.chat_mix if manager.chat_mix is not None else 100, 0))
+    def packet_0_filler(packet: list[int], size: int):
+        return [*packet, *[0 for _ in range(size - len(packet))]]
