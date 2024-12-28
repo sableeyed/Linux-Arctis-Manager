@@ -44,6 +44,7 @@ The following subsystems will be installed:
 
 - **Arctis 7+** (original development by [birdls](https://github.com/birdybirdonline))
 - **Arctis Nova Pro Wireless** (developed by [Giacomo Furlan](https://github.com/elegos)). Note: the PulseAudio's channel's volume will stay at 100% even turning the knob, because it is managed by the GameDAC gen2 directly, so applying an audio reduction would apply it twice.
+- **Arctis Nova Pro Wireless X** (essentially the non-X version, with different product id and name)
 
 ## How to add the support to a new device
 
