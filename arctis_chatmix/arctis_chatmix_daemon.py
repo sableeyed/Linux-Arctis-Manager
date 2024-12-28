@@ -24,8 +24,6 @@ class ArctisChatMixDaemon:
     device_manager: DeviceManager
     device_managers: list[DeviceManager]
 
-    listeners: list[asyncio.Task]
-
     previous_sink: str
 
     _shutdown: bool
@@ -39,7 +37,6 @@ class ArctisChatMixDaemon:
         self.device_manager = None
         self.device_managers = []
 
-        self.listeners = []
         self._shutdown = False
         self._shutting_down = False
 
@@ -48,12 +45,17 @@ class ArctisChatMixDaemon:
         self.log.setLevel(log_level)
 
     def load_device_managers(self):
+        registered_devices = []
+
         # Dynamically instantiate the device managers
         for _, name, _ in pkgutil.iter_modules(['arctis_chatmix/devices']):
             module = __import__(f'arctis_chatmix.devices.{name}', fromlist=[name])
             for _, cls in inspect.getmembers(module, inspect.isclass):
                 if issubclass(cls, DeviceManager) and cls is not DeviceManager:
-                    self.register_device(cls())
+                    device_manager = cls()
+                    if device_manager.get_device_name() not in registered_devices:
+                        self.register_device(cls())
+                        registered_devices.append(device_manager.get_device_name())
 
     def register_device(self, device: DeviceManager):
         if next((
@@ -61,7 +63,7 @@ class ArctisChatMixDaemon:
             if d.get_device_product_id() == device.get_device_product_id()
             and d.get_device_vendor_id() == device.get_device_vendor_id()
         ), None) is None:
-            self.log.debug(f'Registering device "{device.get_device_name()}"')
+            self.log.info(f'Registering device "{device.get_device_name()}"')
             self.device_managers.append(device)
 
     def cleanup_pulseaudio_nodes(self):
@@ -147,7 +149,7 @@ class ArctisChatMixDaemon:
     async def start(self, version):
         self.log.info('-------------------------------')
         self.log.info('- Arctis ChatMix is starting. -')
-        self.log.info(f'-                      v {version}  -')
+        self.log.info(f'-{('v ' + version).rjust(27)}  -')
         self.log.info('-------------------------------')
 
         self.log.info('Registering supported devices.')
@@ -190,20 +192,24 @@ class ArctisChatMixDaemon:
 
         self.set_default_audio_sink()
 
+        async_tasks = []
         for interface_endpoint in self.device_manager.get_endpoint_addresses_to_listen():
             interface = interface_endpoint.interface
             endpoint = interface_endpoint.endpoint
 
             self.log.info(f"Starting to listen on device's {interface:02d}.{endpoint:02d}.")
-            self.listeners.append(asyncio.create_task(self.listen_usb_endpoint(interface_endpoint)))
+            async_tasks.append(asyncio.create_task(self.listen_usb_endpoint(interface_endpoint)))
 
-        await asyncio.gather(*self.listeners)
+        async_tasks.append(asyncio.create_task(self.request_headset_state_loop()))
+
+        self.log.debug('Starting main loop.')
+        await asyncio.gather(*async_tasks)
 
     @staticmethod
     def _normalize_audio(volume, mix):
         return int(round((volume * mix) * 100, 0))
 
-    async def listen_usb_endpoint(self, interface_endpoint: InterfaceEndpoint):
+    async def listen_usb_endpoint(self, interface_endpoint: InterfaceEndpoint) -> None:
         try:
             # interface index of the USB HID for the ChatMix dial might differ from the interface number on the device itself
             self.interface: usb.core.Interface = self.device[0].interfaces()[interface_endpoint.interface]
@@ -231,6 +237,34 @@ class ArctisChatMixDaemon:
                     else:
                         self.log.error(f'Failed to manage input data.', exc_info=True)
                         self.die_gracefully(error_phase="USB input management")
+
+    async def request_headset_state_loop(self) -> None:
+        '''
+        Send the headset status request, if configured by the device manager.
+        Otherwise exit immediately and do nothing.
+        It is expected to read the response from the device in the device manager's manage_input_data function.
+        '''
+
+        interface_endpoint, message = self.device_manager.get_request_device_status()
+        if interface_endpoint is None or message is None:
+            return
+
+        commands_endpoint_address = self.device[0].interfaces()[7].endpoints()[1].bEndpointAddress
+
+        if self.device.is_kernel_driver_active(commands_endpoint_address):
+            self.device.detach_kernel_driver(commands_endpoint_address)
+
+        while not self._shutdown:
+            try:
+                self.device.write(commands_endpoint_address, message)
+                await asyncio.sleep(5)
+            except Exception as e:
+                if not isinstance(e, usb.core.USBTimeoutError):
+                    if isinstance(e, usb.core.USBError) and e.errno == 19:  # device not found
+                        self.die_gracefully()
+                    else:
+                        self.log.error(f'Failed to request device status.', exc_info=True)
+                        self.die_gracefully(error_phase="USB status request")
 
     def __handle_sigterm(self, sig, frame):
         self.log.info('Received shutdown signal, shutting down.')
