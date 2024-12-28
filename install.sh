@@ -70,4 +70,4 @@ systemctl --user daemon-reload 2>/dev/null
 
 echo
 echo "Enabling systemd unit $SYSTEMD_CONFIG."
-systemctl --user enable "$SYSTEMD_CONFIG" 2>/dev/null
+systemctl --user enable --now "$SYSTEMD_CONFIG" 2>/dev/null

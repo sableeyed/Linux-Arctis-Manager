@@ -38,7 +38,7 @@ The following subsystems will be installed:
 - user space's systemd service, which starts up at device plugin (or user's login) and shuts down at device plug-out (or user's log off).
 - the Python application
 
-**Note**: plug your device again once the installation process is completed.
+**Note**: your device should be configured after installation. If not, please unplug and plug the device again.
 
 ## Supported devices
 
