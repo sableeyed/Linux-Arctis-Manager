@@ -2,11 +2,12 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
 import logging
+from typing import Literal, Optional
 
 import usb.core
 
 
-@dataclass
+@dataclass(frozen=True)
 class InterfaceEndpoint:
     '''Address of the interface and the endpoint to listen to'''
 
@@ -17,6 +18,19 @@ class InterfaceEndpoint:
 
     def __eq__(self, other: 'InterfaceEndpoint') -> bool:
         return self.interface == other.interface and self.endpoint == other.endpoint
+
+
+@dataclass(frozen=True)
+class DeviceStatus:
+    '''Value between 0 and 1, percentage'''
+    headset_battery_charge: float
+
+    '''Whether the headset is connected or not'''
+    headset_state: bool
+
+    def __post_init__(self):
+        if self.headset_battery_charge < 0 or self.headset_battery_charge > 1:
+            raise Exception("Headset battery charge must be between 0 and 1")
 
 
 class ChannelPosition(Enum):
@@ -96,6 +110,14 @@ class DeviceManager(ABC):
         Initialize the device. Overwrite when needed.
         '''
         pass
+
+    def get_request_device_status(self) -> tuple[Optional[InterfaceEndpoint], Optional[list[int]]]:
+        '''
+        If the device supports the device status, define the interface/endpoint and the request status message here.
+        It will be read by the manage_input_data function.
+        '''
+
+        return None, None
 
     def get_device_vendor_id(self) -> int:
         '''
