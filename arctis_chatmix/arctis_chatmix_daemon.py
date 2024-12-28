@@ -143,14 +143,35 @@ class ArctisChatMixDaemon:
         self.previous_sink = subprocess.check_output(['pactl', 'get-default-sink']).decode('utf-8').strip()
         self.set_pa_audio_sink(PA_GAME_NODE_NAME)
 
+    def get_pa_default_sink_description(self) -> str:
+        default_sink_name = subprocess.check_output(['pactl', 'get-default-sink']).decode('utf-8').strip()
+
+        env = os.environ
+        env = dict(env, **{'LANG': 'en_US'})
+        pactl_list_sinks = iter(subprocess.check_output(['pactl', 'list', 'sinks'], env=env).decode('utf-8').strip().split('\n'))
+
+        while next(pactl_list_sinks).strip() != f'Name: {default_sink_name}':
+            continue
+
+        for line in pactl_list_sinks:
+            line = line.strip()
+            if line.startswith('Description: '):
+                return line[len('Description: '):].strip()
+
+        return 'Unknown'
+
     def set_pa_audio_sink(self, sink: str) -> None:
         os.system(f'pactl set-default-sink {sink}')
+
+        self.log.notify('Audio sink manager', f'Default audio sink set to "{self.get_pa_default_sink_description()}".')
 
     async def start(self, version):
         self.log.info('-------------------------------')
         self.log.info('- Arctis ChatMix is starting. -')
         self.log.info(f'-{('v ' + version).rjust(27)}  -')
         self.log.info('-------------------------------')
+
+        self.log.notify('Startup', 'The service is starting up.', urgency='low')
 
         self.log.info('Registering supported devices.')
         self.load_device_managers()
@@ -284,13 +305,16 @@ class ArctisChatMixDaemon:
     def _die_gracefully_actuator(self, error_phase: str) -> None:
         if error_phase:
             self.log.error(f'Shutting down due to error in: {error_phase}')
+            self.log.notify('Critical error', f'Shutting down due to error in: {error_phase}', urgency='critical')
+        else:
+            self.log.notify('Shutdown event', 'Service is shutting down.', urgency='low')
 
         self.log.debug('Setting shutdown flag.')
         self._shutdown = True
         self.log.info('Removing PulseAudio nodes.')
         self.cleanup_pulseaudio_nodes()
-        self.log.info('Restoring previous PulseAudio sink.')
-        self.set_pa_audio_sink(self.previous_sink)
+
+        self.log.notify('Audio sink manager', f'Default audio sink set to "{self.get_pa_default_sink_description()}".')
 
         self.log.info('------------------------------')
         self.log.info('- Arctis ChatMix is stopped. -')
