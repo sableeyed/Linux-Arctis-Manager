@@ -249,7 +249,10 @@ class ArctisChatMixDaemon:
         if interface_endpoint is None or message is None:
             return
 
-        commands_endpoint_address = self.device[0].interfaces()[7].endpoints()[1].bEndpointAddress
+        commands_endpoint_address = self.device[0] \
+            .interfaces()[interface_endpoint.interface] \
+            .endpoints()[interface_endpoint.endpoint] \
+            .bEndpointAddress
 
         if self.device.is_kernel_driver_active(commands_endpoint_address):
             self.device.detach_kernel_driver(commands_endpoint_address)
