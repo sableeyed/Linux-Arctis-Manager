@@ -56,6 +56,10 @@ sudo udevadm trigger
 rm -f "$UDEV_CONFIG"
 
 echo
+echo "Disabling previous service before installation"
+systemctl --user disable --now "$SYSTEMD_CONFIG" 2>/dev/null
+
+echo
 echo "Installing systemd unit to ${SYSTEMD_DIR}${SYSTEMD_CONFIG}."
 if [[ ! -d "$SYSTEMD_DIR" ]]; then
     mkdir -vp $SYSTEMD_DIR || \
