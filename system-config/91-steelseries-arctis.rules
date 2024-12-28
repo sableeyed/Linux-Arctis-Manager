@@ -6,6 +6,10 @@ SUBSYSTEM=="usb", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="220e", TAG+="symli
 
 # Arctis Nova Pro Wireless
 SUBSYSTEM=="usb", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="12e0", OWNER="${USER}", GROUP="${USER}", MODE="0664", RUN+="/bin/logger 'Arctis Nova Pro Wireless device is now owned by ${USER}:${USER}'"
-KERNEL=="event*", SUBSYSTEM=="input", SUBSYSTEMS=="usb", ATTRS{idProduct}=="12e0", ATTRS{idVendor}=="1038", TAG+="symlink", SYMLINK+="arctischatmix", TAG+="systemd", ENV{SYSTEMD_ALIAS}="/dev/arctischatmix", RUN+="/bin/logger 'Arctis Nova Pro Wireless /dev/arctischatmix symlink device added'"
+KERNEL=="event*", SUBSYSTEM=="input", SUBSYSTEMS=="usb", ATTRS{idProduct}=="12e0", ATTRS{idVendor}=="1038", TAG+="symlink", SYMLINK+="arctischatmix", TAG+="systemd", ENV{SYSTEMD_ALIAS}="/dev/arctischatmix", RUN+="/bin/logger 'Arctis Nova Pro Wireless /dev/arctischatmix symlink device added (%b)'"
+
+# Arctis Nova Pro Wireless
+SUBSYSTEM=="usb", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="12e5", OWNER="${USER}", GROUP="${USER}", MODE="0664", RUN+="/bin/logger 'Arctis Nova Pro Wireless device is now owned by ${USER}:${USER}'"
+KERNEL=="event*", SUBSYSTEM=="input", SUBSYSTEMS=="usb", ATTRS{idProduct}=="12e5", ATTRS{idVendor}=="1038", TAG+="symlink", SYMLINK+="arctischatmix", TAG+="systemd", ENV{SYSTEMD_ALIAS}="/dev/arctischatmix", RUN+="/bin/logger 'Arctis Nova Pro Wireless X /dev/arctischatmix symlink device added'"
 
 LABEL="local_end"
