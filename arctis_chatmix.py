@@ -32,4 +32,4 @@ if __name__ == '__main__':
 
     daemon = ArctisChatMixDaemon(log_level=logging.DEBUG if args.verbose else NOTIFY)
 
-    asyncio.run(daemon.start('1.3'))
+    asyncio.run(daemon.start('1.3.1'))

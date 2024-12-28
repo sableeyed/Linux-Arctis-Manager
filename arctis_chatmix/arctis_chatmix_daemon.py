@@ -78,6 +78,27 @@ class ArctisChatMixDaemon:
     def register_pulseaudio_nodes(self) -> None:
         self.cleanup_pulseaudio_nodes()
 
+        default_sink = None
+
+        self.log.debug('Getting Arctis sink.')
+        try:
+            pactl_short_sinks = os.popen("pactl list short sinks").readlines()
+            # grab any elements from list of pactl sinks that are Arctis
+            arctis = re.compile('.*[aA]rctis.*')
+            arctis_sink = list(filter(arctis.match, pactl_short_sinks))[0]
+
+            # split the arctis line on tabs (which form table given by 'pactl short sinks')
+            tabs_pattern = re.compile(r'\t')
+            tabs_re = re.split(tabs_pattern, arctis_sink)
+
+            # skip first element of tabs_re (sink's ID which is not persistent)
+            arctis_device = tabs_re[1]
+            self.log.debug(f"Arctis sink identified as {arctis_device}")
+            default_sink = arctis_device
+        except Exception as e:
+            self.log.error('Failed to get default sink.', exc_info=True)
+            sys.exit(2)
+
         # Create the game and chat nodes
         self.log.info('Creating PulseAudio Audio/Sink nodes.')
         try:
@@ -104,39 +125,18 @@ class ArctisChatMixDaemon:
             """)
         except Exception as e:
             self.log.error('Failed to create PulseAudio nodes.', exc_info=True)
-            sys.exit(2)
-
-        default_sink = None
-
-        self.log.debug('Getting Arctis sink.')
-        try:
-            pactl_short_sinks = os.popen("pactl list short sinks").readlines()
-            # grab any elements from list of pactl sinks that are Arctis
-            arctis = re.compile('.*[aA]rctis.*')
-            arctis_sink = list(filter(arctis.match, pactl_short_sinks))[0]
-
-            # split the arctis line on tabs (which form table given by 'pactl short sinks')
-            tabs_pattern = re.compile(r'\t')
-            tabs_re = re.split(tabs_pattern, arctis_sink)
-
-            # skip first element of tabs_re (sink's ID which is not persistent)
-            arctis_device = tabs_re[1]
-            self.log.debug(f"Arctis sink identified as {arctis_device}")
-            default_sink = arctis_device
-        except Exception as e:
-            self.log.error('Failed to get default sink.', exc_info=True)
             sys.exit(3)
 
         self.log.info('Setting PulseAudio channel links.')
-        try:
-            for position in self.device_manager.get_audio_position():
-                pos_name = position.value
-                self.log.debug(f'Setting "{PA_GAME_NODE_NAME}:monitor_{pos_name}" > "{default_sink}:playback_{pos_name}"')
-
-                os.system(f'pw-link "{PA_GAME_NODE_NAME}:monitor_{pos_name}" "{default_sink}:playback_{pos_name}" 1>/dev/null')
-        except Exception as e:
-            self.log.error(f'Failed to set {PA_GAME_NODE_NAME}\'s audio positions.', exc_info=True)
-            sys.exit(4)
+        for node in [PA_GAME_NODE_NAME, PA_CHAT_NODE_NAME]:
+            try:
+                for position in self.device_manager.get_audio_position():
+                    pos_name = position.value
+                    self.log.debug(f'Setting "{node}:monitor_{pos_name}" > "{default_sink}:playback_{pos_name}"')
+                    os.system(f'pw-link "{node}:monitor_{pos_name}" "{default_sink}:playback_{pos_name}" 1>/dev/null')
+            except Exception as e:
+                self.log.error(f'Failed to set {node}\'s audio positions.', exc_info=True)
+                sys.exit(4)
 
     def set_default_audio_sink(self) -> None:
         self.log.info(f'Setting PulseAudio\'s default sink to {PA_GAME_NODE_NAME}.')
