@@ -1,13 +1,16 @@
-#     Copyright (C) 2022  birdybirdonline & awth13 - see LICENSE.md
-#     @ https://github.com/birdybirdonline/Linux-Arctis-7-Plus-ChatMix
-    
-#     Contact via Github in the first instance
-#     https://github.com/birdybirdonline
-#     https://github.com/awth13
-
 #!/bin/bash
 
-source ./scripts/pyusb.sh
+#     Copyright (C) 2024 - present: elegos - see LICENSE.md
+#     @ https://github.com/elegos/Linux-Arctis-7-Plus-ChatMix
+
+#     Copyright (C) 2022: birdybirdonline & awth13 - see LICENSE.md
+#     @ https://github.com/birdybirdonline/Linux-Arctis-7-Plus-ChatMix
+    
+#     In case of problems, please open an issue on Github
+#     https://github.com/elegos/Linux-Arctis-ChatMix/issues
+
+
+./scripts/dependencies.sh
 
 CONFIG_DIR="system-config/"
 SYSTEMD_CONFIG="arctis-pcm.service"
@@ -39,7 +42,7 @@ fi
 echo "Installing Arctis ChatMix."
 echo "Installing script to ${SCRIPT_DIR}${SCRIPT}."
 if [[ ! -d "$SCRIPT_DIR" ]]; then
-    mkdir -vp $SCRIPT_DIR || \
+    mkdir -vp "${SCRIPT_DIR}" || \
         { echo "FATAL: Failed to create $SCRIPT_DIR" ; cleanup ; exit 1;}
 fi
 cp "${SCRIPT}" "${SCRIPT_DIR}"
@@ -62,7 +65,7 @@ systemctl --user disable --now "$SYSTEMD_CONFIG" 2>/dev/null
 echo
 echo "Installing systemd unit to ${SYSTEMD_DIR}${SYSTEMD_CONFIG}."
 if [[ ! -d "$SYSTEMD_DIR" ]]; then
-    mkdir -vp $SYSTEMD_DIR || \
+    mkdir -vp "${SYSTEMD_DIR}" || \
         { echo "FATAL: Failed to create $SCRIPT_DIR" ; cleanup ; exit 1;}
 fi
 cp "${CONFIG_DIR}${SYSTEMD_CONFIG}" "$SYSTEMD_DIR"

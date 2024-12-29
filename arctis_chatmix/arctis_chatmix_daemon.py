@@ -198,10 +198,6 @@ class ArctisChatMixDaemon:
 
             sys.exit(1)
 
-        # Register the sigint / sigterm handler
-        signal.signal(signal.SIGINT, self.__handle_sigterm)
-        signal.signal(signal.SIGTERM, self.__handle_sigterm)
-
         self.log.debug('Initializing device.')
         for interface_endpoint in self.device_manager.get_endpoint_addresses_to_listen():
             if self.device.is_kernel_driver_active(interface_endpoint.interface):
@@ -290,7 +286,7 @@ class ArctisChatMixDaemon:
                         self.log.error(f'Failed to request device status.', exc_info=True)
                         self.die_gracefully(error_phase="USB status request")
 
-    def __handle_sigterm(self, sig, frame):
+    def stop(self):
         self.log.info('Received shutdown signal, shutting down.')
 
         self.die_gracefully()
