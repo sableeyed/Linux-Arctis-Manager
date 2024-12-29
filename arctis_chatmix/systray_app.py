@@ -24,8 +24,9 @@ class SystrayApp:
         self.app = app
         self.tray_icon = QSystemTrayIcon(QIcon(
             # TODO: change it depending on the theme lightness
-            str(Path(__file__).parent.joinpath('images', 'steelseries_logo_white.png').absolute().as_posix())
+            str(Path(__file__).parent.joinpath('images', 'steelseries_logo.svg').absolute().as_posix())
         ), parent=self.app)
+        self.tray_icon.setToolTip('Arctis ChatMix')
 
         self.menu_entries = {}
 
