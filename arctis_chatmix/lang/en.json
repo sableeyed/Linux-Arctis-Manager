@@ -1,0 +1,58 @@
+{
+    "menu": {
+        "headset_power_status_label": "Headset power status: {status}",
+        "headset_power_status_status": {
+            "offline": "offline",
+            "cable_charging": "charging (cable)",
+            "online": "online"
+        },
+
+        "headset_battery_charge_label": "Battery status: {status}%",
+        "charge_slot_battery_charge_label": "Charge slot battery status: {status}%",
+
+        "wireless_pairing_label": "Wireless: {status}",
+        "wireless_pairing_status": {
+            "not_paired": "not paired",
+            "paired_offline": "paired (offline)",
+            "connected": "connected"
+        },
+
+        "wireless_mode_label": "Wireless mode: {mode}",
+        "wireless_mode_status": {
+            "speed": "speed",
+            "range": "range"
+        },
+
+        "transparent_noise_cancelling_level_label": "Transparent noise cancelling level: {status}%",
+        "noise_cancelling_label": "Noise cancelling: {status}",
+        "noise_cancelling_status": {
+            "on": "on",
+            "transparent": "transparent",
+            "off": "off"
+        },
+
+        "mic_status_label": "Mic status: {status}",
+        "mic_status_status": {
+            "muted": "muted",
+            "unmuted": "unmuted"
+        },
+
+        "mic_led_brightness_label": "Mic LED brightness: {status}%",
+
+        "bluetooth_powerup_state_label": "Bluetooth turned on: {status}",
+        "bluetooth_power_status_label": "Bluetooth status: {status}",
+        "bluetooth_auto_mute_label": "Bluetooth mute: {status}",
+        "bluetooth_connection_label": "Bluetooth connection: {status}",
+
+        "bluetooth_auto_mute_status": {
+            "on": "on",
+            "off": "off",
+            "half": "half"
+        },
+
+        "on_off_state": {
+            "on": "on",
+            "off": "off"
+        }
+    }
+}

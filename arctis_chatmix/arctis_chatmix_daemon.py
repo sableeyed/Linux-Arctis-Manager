@@ -268,7 +268,6 @@ class ArctisChatMixDaemon:
                 # Propagate the device status to any registered listener
                 if chatmix_state.device_status is not None:
                     for callback in self.device_status_callbacks:
-                        self.log.debug(chatmix_state.device_status)
                         callback(chatmix_state.device_status)
 
             except Exception as e:

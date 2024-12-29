@@ -11,7 +11,7 @@ notify_enabled = os.system('which notify-send 1>/dev/null 2>&1') == 0
 
 def logging_notify(self: logging.Logger, summary: str, message: str, urgency: Literal['low', 'normal', 'critical'] = 'normal', *args, **kwargs):
     if notify_enabled:
-        args = ['--app-name="Arctis ChatMix"', f'--urgency={urgency}']
+        args = ['--app-name="Arctis ChatMix"', f'--urgency={urgency}', '--expire-time=2000']
         os.system(f'notify-send {' '.join(args)} "{summary}" "{message.format(*args, **kwargs).replace('"', '\\"')}"')
     else:
         self._log(logging.INFO, f'NOTIFICATION: {summary} :: {message}', args, **kwargs)
@@ -50,6 +50,8 @@ if __name__ == '__main__':
 
     signal.signal(signal.SIGINT, sigterm_handler)
     signal.signal(signal.SIGTERM, sigterm_handler)
+
+    daemon.register_device_change_callback(systray_app.on_device_status_update)
     daemon.register_shutdown_callback(sigterm_handler)
 
     event_loop = QEventLoop(app)
