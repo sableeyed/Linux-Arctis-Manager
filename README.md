@@ -36,9 +36,9 @@ In order to install the application, simply run `./install.sh` (as user, not as 
 The following subsystems will be installed:
 - udev rules to set the ownership of the `/dev` device and to create a `/dev/arctischatmix` symlink to trigger the service (see below). The ownership part is not perfect for multi-users setups, but I'm working on it.
 - user space's systemd service, which starts up at device plugin (or user's login) and shuts down at device plug-out (or user's log off).
-- the Python application
+- the Python application, including the service which communicates to the device, and a system tray icon which will display all the available information. **TODO**: provide the possibility to alter some of the configurations, like wireless mode or noise cancelling level.
 
-**Note**: your device should be configured after installation. If not, please unplug and plug the device again.
+**Note**: your device should automatically be configured after installation. If not, please unplug and plug the device again.
 
 ## Supported devices
 
