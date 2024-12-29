@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 import signal
 from PyQt6.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QLabel
-from PyQt6.QtGui import QIcon
+from PyQt6.QtGui import QIcon, QAction
 
 
 class SystrayApp:
@@ -11,6 +11,7 @@ class SystrayApp:
     app: QApplication
     tray_icon: QSystemTrayIcon
     menu: QMenu
+    menu_battery_status: QLabel
 
     def __init__(self, app: QApplication, log_level: int):
         self.setup_logger(log_level)
@@ -18,10 +19,12 @@ class SystrayApp:
         self.app = app
         self.tray_icon = QSystemTrayIcon(QIcon(
             # TODO: change it depending on the theme lightness
-            str(Path(__file__).parent.joinpath('images', 'steelseries_logo_white.svg').absolute().as_posix())
+            str(Path(__file__).parent.joinpath('images', 'steelseries_logo_white.png').absolute().as_posix())
         ), parent=self.app)
 
         self.menu = QMenu()
+        self.menu_battery_status = QAction('Battery status: ...')
+        self.menu.addAction(self.menu_battery_status)
         self.tray_icon.setContextMenu(self.menu)
 
     def setup_logger(self, log_level: int):

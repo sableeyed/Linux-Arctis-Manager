@@ -10,7 +10,8 @@
             "request": "launch",
             "program": "arctis_chatmix.py",
             "console": "integratedTerminal",
-            "args": ["--verbose"]
+            "args": ["--verbose"],
+            "justMyCode": false
         }
     ]
 }

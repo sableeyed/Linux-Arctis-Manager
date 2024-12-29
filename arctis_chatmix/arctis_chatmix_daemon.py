@@ -4,13 +4,13 @@ import logging
 import os
 import pkgutil
 import re
-import signal
 import subprocess
 import sys
+from typing import Callable
 
 import usb.core
 
-from arctis_chatmix.device_manager import DeviceManager, InterfaceEndpoint
+from arctis_chatmix.device_manager import DeviceManager, DeviceStatus, InterfaceEndpoint
 
 PA_GAME_NODE_NAME = 'Arctis_Game'
 PA_CHAT_NODE_NAME = 'Arctis_Chat'
@@ -26,6 +26,9 @@ class ArctisChatMixDaemon:
 
     previous_sink: str
 
+    device_status_callbacks: list[Callable[[DeviceStatus], None]]
+    shutdown_callbacks: list[Callable[[], None]]
+
     _shutdown: bool
     _shutting_down: bool
 
@@ -36,6 +39,9 @@ class ArctisChatMixDaemon:
 
         self.device_manager = None
         self.device_managers = []
+
+        self.device_status_callbacks = []
+        self.shutdown_callbacks = []
 
         self._shutdown = False
         self._shutting_down = False
@@ -166,6 +172,19 @@ class ArctisChatMixDaemon:
         self.log.notify('Audio sink manager', f'Default audio sink set to "{self.get_pa_default_sink_description()}".')
 
     async def start(self, version):
+        """
+        Start the Arctis ChatMix daemon.
+
+        This method initializes and starts the daemon service by registering
+        supported devices, identifying a compatible Arctis device, initializing
+        the device, and registering PulseAudio nodes. It sets the default audio
+        sink and begins listening to USB endpoints for device input data. The
+        method runs an asynchronous loop to manage these tasks concurrently.
+
+        Args:
+            version (str): The version of the service to be logged during startup.
+        """
+
         self.log.info('-------------------------------')
         self.log.info('- Arctis ChatMix is starting. -')
         self.log.info(f'-{('v ' + version).rjust(27)}  -')
@@ -200,8 +219,7 @@ class ArctisChatMixDaemon:
 
         self.log.debug('Initializing device.')
         for interface_endpoint in self.device_manager.get_endpoint_addresses_to_listen():
-            if self.device.is_kernel_driver_active(interface_endpoint.interface):
-                self.device.detach_kernel_driver(interface_endpoint.interface)
+            self.device_manager.kernel_detach(interface_endpoint)
         self.device_manager.init_device()
 
         self.log.info('Registering PulseAudio nodes.')
@@ -209,20 +227,19 @@ class ArctisChatMixDaemon:
 
         self.set_default_audio_sink()
 
-        async_tasks = []
-        for interface_endpoint in self.device_manager.get_endpoint_addresses_to_listen():
-            interface = interface_endpoint.interface
-            endpoint = interface_endpoint.endpoint
+        async with asyncio.TaskGroup() as tg:
+            for interface_endpoint in self.device_manager.get_endpoint_addresses_to_listen():
+                interface = interface_endpoint.interface
+                endpoint = interface_endpoint.endpoint
 
-            self.log.info(f"Starting to listen on device's {interface:02d}.{endpoint:02d}.")
-            async_tasks.append(asyncio.create_task(self.listen_usb_endpoint(interface_endpoint)))
+                self.log.info(f"Starting to listen on device's {interface:02d}.{endpoint:02d}.")
+                tg.create_task(self.listen_usb_endpoint(interface_endpoint))
 
-        async_tasks.append(asyncio.create_task(self.request_headset_state_loop()))
+            tg.create_task(self.request_headset_state_loop())
 
-        self.log.debug('Starting main loop.')
-        await asyncio.gather(*async_tasks)
+            self.log.debug('Starting main loop.')
 
-    @staticmethod
+    @ staticmethod
     def _normalize_audio(volume, mix):
         return int(round((volume * mix) * 100, 0))
 
@@ -239,7 +256,7 @@ class ArctisChatMixDaemon:
 
         while not self._shutdown:
             try:
-                read_input = self.device.read(self.addr, 64)
+                read_input = await asyncio.to_thread(self.device.read, self.addr, 64)
                 chatmix_state = self.device_manager.manage_input_data(read_input, interface_endpoint)
 
                 default_device_volume = "{}%".format(self._normalize_audio(chatmix_state.game_volume, chatmix_state.game_mix))
@@ -247,6 +264,13 @@ class ArctisChatMixDaemon:
 
                 os.system(f'pactl set-sink-volume Arctis_Game {default_device_volume}')
                 os.system(f'pactl set-sink-volume Arctis_Chat {virtual_device_volume}')
+
+                # Propagate the device status to any registered listener
+                if chatmix_state.device_status is not None:
+                    for callback in self.device_status_callbacks:
+                        self.log.debug(chatmix_state.device_status)
+                        callback(chatmix_state.device_status)
+
             except Exception as e:
                 if not isinstance(e, usb.core.USBTimeoutError):
                     if isinstance(e, usb.core.USBError) and e.errno == 19:  # device not found
@@ -271,8 +295,7 @@ class ArctisChatMixDaemon:
             .endpoints()[interface_endpoint.endpoint] \
             .bEndpointAddress
 
-        if self.device.is_kernel_driver_active(commands_endpoint_address):
-            self.device.detach_kernel_driver(commands_endpoint_address)
+        self.device_manager.kernel_detach(interface_endpoint)
 
         while not self._shutdown:
             try:
@@ -285,6 +308,12 @@ class ArctisChatMixDaemon:
                     else:
                         self.log.error(f'Failed to request device status.', exc_info=True)
                         self.die_gracefully(error_phase="USB status request")
+
+    def register_device_change_callback(self, callback: Callable[[DeviceStatus], None]) -> None:
+        self.device_status_callbacks.append(callback)
+
+    def register_shutdown_callback(self, callback: Callable[[], None]) -> None:
+        self.shutdown_callbacks.append(callback)
 
     def stop(self):
         self.log.info('Received shutdown signal, shutting down.')
@@ -315,3 +344,6 @@ class ArctisChatMixDaemon:
         self.log.info('------------------------------')
         self.log.info('- Arctis ChatMix is stopped. -')
         self.log.info('------------------------------')
+
+        for callback in self.shutdown_callbacks:
+            callback()

@@ -1,5 +1,15 @@
 from arctis_chatmix.device_manager import ChatMixState, DeviceManager, DeviceStatus, InterfaceEndpoint
 
+inactive_time_minutes_decode_dict = {
+    0: 0,
+    1: 1,
+    2: 5,
+    3: 10,
+    4: 15,
+    5: 30,
+    6: 60,
+}
+
 
 class ArctisNovaProWirelessDevice(DeviceManager):
     game_mix: int = None
@@ -70,8 +80,7 @@ class ArctisNovaProWirelessDevice(DeviceManager):
         # 8th interface, 2nd endpoint. The 1st one is for receiving data from the DAC
         commands_endpoint_address = self.device[0].interfaces()[7].endpoints()[1].bEndpointAddress
 
-        if self.device.is_kernel_driver_active(commands_endpoint_address):
-            self.device.detach_kernel_driver(commands_endpoint_address)
+        self.kernel_detach(InterfaceEndpoint(7, 1))
 
         for command in commands:
             self.device.write(commands_endpoint_address, self.packet_0_filler(command[0], 91))
@@ -82,7 +91,7 @@ class ArctisNovaProWirelessDevice(DeviceManager):
 
     def manage_input_data(self, data: list[int], endpoint: InterfaceEndpoint) -> ChatMixState:
         volume = 1
-        device_connected = True
+        device_status = None
 
         if endpoint == InterfaceEndpoint(7, 0):
             # Volume control is managed by the GameDAC
@@ -91,22 +100,39 @@ class ArctisNovaProWirelessDevice(DeviceManager):
                 pass
 
             elif len(data) >= 4 and data[0] == 0x07 and data[1] == 0x45:
+                self.log.debug('Received volume control data.')
                 self.game_mix = data[2] / 100  # Ranges from 0 to 100
                 self.chat_mix = data[3] / 100  # Ranges from 0 to 100
             elif len(data) >= 16 and data[0] == 0x06 and data[1] == 0xb0:
                 # https://github.com/Sapd/HeadsetControl/blob/master/src/devices/steelseries_arctis_nova_pro_wireless.c#L242
                 device_status = DeviceStatus(
+                    bluetooth_powerup_state='off' if data[2] == 0x00 else 'on',
+                    bluetooth_auto_mute='off' if data[3] == 0x00 else 'half' if data[3] == 0x01 else 'on',
+                    bluetooth_power_status='off' if data[4] == 0x01 else 'on',
+                    bluetooth_connection='off' if data[5] == 0x00 else 'connected' if data[5] == 0x01 else 'disconnected',
                     headset_battery_charge=float(round(data[6] / 8, 2)),
-                    headset_state=data[15] in (0x02, 0x08)  # 0x01 offline, 0x02 cable charging, 0x08 online
+                    charge_slot_battery_charge=float(round(data[7] / 8, 2)),
+                    transparent_noise_cancelling_level=data[8] / 10,
+                    mic_status='unmuted' if data[9] == 0x00 else 'muted',
+                    noise_cancelling='off' if data[10] == 0x00 else 'transparent' if data[10] == 0x01 else 'on',
+                    mic_led_brightness=data[11] / 10,
+                    auto_off_time_minutes=inactive_time_minutes_decode_dict[data[12]],
+                    wireless_mode='speed' if data[13] == 0x00 else 'range',
+                    wireless_pairing='not_paired' if data[14] == 0x01 else 'paired_offline' if data[13] == 0x04 else 'connected',
+                    headset_power_status='offline' if data[15] == 0x01 else 'cable_charging' if data[14] == 0x02 else 'online',
                 )
-
-                device_connected = device_status.headset_state
             else:
                 self.log.debug(f'Incoming data from {endpoint.interface}, {endpoint.endpoint}: [{':'.join(hex(x)[2:] for x in data)}]')
         else:
             self.log.debug(f'Incoming data from {endpoint.interface}, {endpoint.endpoint}: [{':'.join(hex(x)[2:] for x in data)}]')
 
-        return ChatMixState(volume, volume, self.game_mix if self.game_mix is not None else 1, self.chat_mix if self.chat_mix is not None else 1, device_connected)
+        return ChatMixState(
+            game_volume=volume,
+            chat_volume=volume,
+            game_mix=self.game_mix if self.game_mix is not None else 1,
+            chat_mix=self.chat_mix if self.chat_mix is not None else 1,
+            device_status=device_status,
+        )
 
     @staticmethod
     def packet_0_filler(packet: list[int], size: int):

@@ -44,18 +44,19 @@ if __name__ == '__main__':
     daemon = ArctisChatMixDaemon(log_level=log_level)
     systray_app = SystrayApp(app=app, log_level=log_level)
 
-    def sigterm_handler(sig, frame):
+    def sigterm_handler(sig=None, frame=None):
         daemon.stop()
         systray_app.stop()
 
     signal.signal(signal.SIGINT, sigterm_handler)
     signal.signal(signal.SIGTERM, sigterm_handler)
+    daemon.register_shutdown_callback(sigterm_handler)
 
     event_loop = QEventLoop(app)
     asyncio.set_event_loop(event_loop)
 
     asyncio.ensure_future(systray_app.start())
-    asyncio.ensure_future(daemon.start('1.3.1'))
+    asyncio.ensure_future(daemon.start('1.4-dev'))
 
     with event_loop:
         event_loop.run_forever()
