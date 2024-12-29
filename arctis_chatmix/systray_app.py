@@ -1,9 +1,13 @@
 import json
 import logging
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any, Callable
-from PyQt6.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QLabel
-from PyQt6.QtGui import QIcon, QAction
+
+from PyQt6 import QtSvg
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QAction, QIcon, QImage, QPainter, QPixmap, QPalette
+from PyQt6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 
 from arctis_chatmix.device_manager import DeviceStatus
 
@@ -18,14 +22,48 @@ class SystrayApp:
 
     translations: dict
 
+    def get_systray_icon_pixmap(self, path: Path) -> QPixmap:
+        brush_color = QApplication.palette().color(QPalette.ColorRole.Text)
+        # brush_color_argb = f'#{hex(brush_color.alpha())[2:]}{hex(brush_color.red())[2:]}{
+        #     hex(brush_color.green())[2:]}{hex(brush_color.blue())[2:]}'
+
+        xml_tree = ET.parse(path.absolute().as_posix())
+        xml_root = xml_tree.getroot()
+
+        for path in xml_root.findall('.//{http://www.w3.org/2000/svg}path'):
+            path.set('fill', brush_color.name())
+
+        xml_str = ET.tostring(xml_root)
+
+        svg_renderer = QtSvg.QSvgRenderer(xml_str)
+
+        # Create the empty image
+        image = QImage(64, 64, QImage.Format.Format_ARGB32_Premultiplied)
+        image.fill(Qt.GlobalColor.transparent)
+
+        # Initialize the painter
+        painter = QPainter(image)
+        painter.setBrush(brush_color)
+        painter.setPen(Qt.PenStyle.NoPen)
+
+        # Render the image on the QImage
+        svg_renderer.render(painter)
+
+        # Rendering end
+        painter.end()
+
+        pixmap = QPixmap.fromImage(image)
+
+        return pixmap
+
     def __init__(self, app: QApplication, log_level: int):
         self.setup_logger(log_level)
-
         self.app = app
-        self.tray_icon = QSystemTrayIcon(QIcon(
-            # TODO: change it depending on the theme lightness
-            str(Path(__file__).parent.joinpath('images', 'steelseries_logo.svg').absolute().as_posix())
-        ), parent=self.app)
+
+        svg_path = Path(__file__).parent.joinpath('images', 'steelseries_logo.svg')
+        pixmap = self.get_systray_icon_pixmap(svg_path)
+
+        self.tray_icon = QSystemTrayIcon(QIcon(pixmap), parent=self.app)
         self.tray_icon.setToolTip('Arctis ChatMix')
 
         self.menu_entries = {}
