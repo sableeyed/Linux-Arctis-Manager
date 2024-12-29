@@ -69,8 +69,6 @@ class SystrayApp:
 
         self.menu_entries = {}
 
-        # TODO: dynamically get the language, defaulting to "en"
-
         lang_code, _ = locale.getdefaultlocale()
         lang_code = lang_code.split('_')[0]
 
