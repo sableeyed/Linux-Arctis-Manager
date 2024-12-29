@@ -1,4 +1,5 @@
 import json
+import locale
 import logging
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -69,7 +70,14 @@ class SystrayApp:
         self.menu_entries = {}
 
         # TODO: dynamically get the language, defaulting to "en"
-        self.translations = json.load(Path(__file__).parent.joinpath('lang', 'en.json').open('r'))
+
+        lang_code, _ = locale.getdefaultlocale()
+        lang_code = lang_code.split('_')[0]
+
+        translation_json_path = Path(__file__).parent.joinpath('lang', f'{lang_code}.json')
+        if not translation_json_path.is_file():
+            translation_json_path = Path(__file__).parent.joinpath('lang', 'en.json')
+        self.translations = json.load(translation_json_path.open('r'))
 
         self.menu = QMenu()
         self.tray_icon.setContextMenu(self.menu)
