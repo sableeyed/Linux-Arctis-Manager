@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Arctis Nova Pro Wireless
 - Added translation files (dynamically loaded via LOCALE)
 
+### Changed
+
+- **BREAKING**: now all devices must personalize their own instance of `DeviceStatus` in order to tailor the checks on the device itself
+
 ## [1.3.1]
 
 ### Fixed
