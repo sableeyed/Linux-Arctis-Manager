@@ -1,7 +1,7 @@
 from typing import Literal
 from arctis_chatmix.device_manager import ChatMixState, DeviceManager, DeviceStatus, InterfaceEndpoint
 
-inactive_time_minutes_decode_dict = {
+INACTIVE_TIME_MINUTES = {
     0: 0,
     1: 1,
     2: 5,
@@ -79,17 +79,17 @@ class ArctisNovaProWirelessDevice(DeviceManager):
             # Burst of commands (device init?)
             ([0x06, 0x8d, 0x01], False),
             ([0x06, 0x33, 0x14, 0x14, 0x14], False),  # Equalizer with 3 bands
-            ([0x06, 0xc3], False),
+            ([0x06, 0xc3, 0x00], False),  # 2.4G mode (0x00: speed, 0x01: range)
             ([0x06, 0x2e, 0x00], False),  # Set equalizer preset (0)
-            ([0x06, 0xc1, 0x05], False),  # Set inactive time (to 30 minutes, see inactive_time_minutes_decode_dict)
+            ([0x06, 0xc1, 0x05], False),  # Set inactive time (to 30 minutes, see INACTIVE_TIME_MINUTES)
             ([0x06, 0x85, 0x0a], False),
-            ([0x06, 0x37, 0x0a], False),
+            ([0x06, 0x37, 0x0a], False),  # Mic volume 100% (01 (mute) - a0 (100%))
             ([0x06, 0xb2], False),
             ([0x06, 0x47, 0x64, 0x00, 0x64], False),
             ([0x06, 0x83, 0x01], False),
             ([0x06, 0x89, 0x00], False),
-            ([0x06, 0x27, 0x02], False),
-            ([0x06, 0xb3], False),
+            ([0x06, 0x27, 0x02], False),  # Gain (0x01: low, 0x02: high)
+            ([0x06, 0xb3, 0x00], False),
             ([0x06, 0x39, 0x00], False),  # Set the sidetone to 0 (off) -> possible values: 0 (off), 1 (low), 2 (medium), 3 (high)
             ([0x06, 0xbf, 0x0a], False),  # Set lights to 10 (out of 10)
             ([0x06, 0x43, 0x01], False),
@@ -98,6 +98,10 @@ class ArctisNovaProWirelessDevice(DeviceManager):
             ([0x06, 0x8d, 0x01], False),
             ([0x06, 0x49, 0x01], False),
             ([0x06, 0xb7, 0x00], False),
+
+            # ([0x06, 0xc3, 0x01], False),  # 2.4G mode test (range)
+            # ([0x06, 0x09, 0x00], False),  # 2.4G mode test
+
             # Another series of queries (perhaps for confirmation?)
             ([0x06, 0xb7, 0x00], True),
             ([0x06, 0xb7, 0x00], True),
@@ -141,7 +145,7 @@ class ArctisNovaProWirelessDevice(DeviceManager):
                     mic_status='unmuted' if data[9] == 0x00 else 'muted',
                     noise_cancelling='off' if data[10] == 0x00 else 'transparent' if data[10] == 0x01 else 'on',
                     mic_led_brightness=data[11] / 10,
-                    auto_off_time_minutes=inactive_time_minutes_decode_dict[data[12]],
+                    auto_off_time_minutes=INACTIVE_TIME_MINUTES[data[12]],
                     wireless_mode='speed' if data[13] == 0x00 else 'range',
                     wireless_pairing='not_paired' if data[14] == 0x01 else 'paired_offline' if data[13] == 0x04 else 'connected',
                     headset_power_status='offline' if data[15] == 0x01 else 'cable_charging' if data[14] == 0x02 else 'online',
