@@ -100,27 +100,27 @@ class SystrayApp:
 
         sections = [
             {
-                'headset_power_status': {'format': {'status': self.translations['menu']['headset_power_status_status'][status.headset_power_status]}},
+                'headset_power_status': {'format': {'status': self.translations['menu']['headset_power_status_status'][status.headset_power_status] or status.headset_power_status}},
                 'headset_battery_charge': {'format': {'status': int(status.headset_battery_charge*100)}},
                 'charge_slot_battery_charge': {'format': {'status': int(status.charge_slot_battery_charge*100)}},
             },
             {
-                'mic_status': {'format': {'status': self.translations['menu']['mic_status_status'][status.mic_status]}},
+                'mic_status': {'format': {'status': self.translations['menu']['mic_status_status'][status.mic_status] or status.mic_status}},
                 'mic_led_brightness': {'format': {'status': int(status.mic_led_brightness * 100)}},
             },
             {
-                'noise_cancelling': {'format': {'status': self.translations['menu']['noise_cancelling_status'][status.noise_cancelling]}},
+                'noise_cancelling': {'format': {'status': self.translations['menu']['noise_cancelling_status'][status.noise_cancelling] or status.noise_cancelling}},
                 'transparent_noise_cancelling_level': {'format': {'status': int(status.transparent_noise_cancelling_level*100)}},
             },
             {
-                'wireless_pairing': {'format': {'status': self.translations['menu']['wireless_pairing_status'][status.wireless_pairing]}},
-                'wireless_mode': {'format': {'mode': self.translations['menu']['wireless_mode_status'][status.wireless_mode]}},
+                'wireless_pairing': {'format': {'status': self.translations['menu']['wireless_pairing_status'][status.wireless_pairing] or status.wireless_pairing}},
+                'wireless_mode': {'format': {'mode': self.translations['menu']['wireless_mode_status'][status.wireless_mode] or status.wireless_mode}},
             },
             {
-                'bluetooth_powerup_state': {'format': {'status': self.translations['menu']['on_off_state'][status.bluetooth_powerup_state]}},
-                'bluetooth_power_status': {'format': {'status': self.translations['menu']['on_off_state'][status.bluetooth_power_status]}},
-                'bluetooth_auto_mute': {'format': {'status': self.translations['menu']['bluetooth_auto_mute_status'][status.bluetooth_auto_mute]}},
-                'bluetooth_connection': {'format': {'status': self.translations['menu']['on_off_state'][status.bluetooth_connection]}},
+                'bluetooth_powerup_state': {'format': {'status': self.translations['menu']['on_off_state'][status.bluetooth_powerup_state] or status.bluetooth_powerup_state}},
+                'bluetooth_power_status': {'format': {'status': self.translations['menu']['on_off_state'][status.bluetooth_power_status] or status.bluetooth_power_status}},
+                'bluetooth_auto_mute': {'format': {'status': self.translations['menu']['bluetooth_auto_mute_status'][status.bluetooth_auto_mute] or status.bluetooth_auto_mute}},
+                'bluetooth_connection': {'format': {'status': self.translations['menu']['on_off_state'][status.bluetooth_connection] or status.bluetooth_connection}},
             }
         ]
 
