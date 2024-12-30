@@ -49,10 +49,10 @@ class ArctisNovaProWirelessDevice(DeviceManager):
             ([0x06, 0x3b], False),  # Correction?
             # Burst of commands (device init?)
             ([0x06, 0x8d, 0x01], False),
-            ([0x06, 0x33, 0x14, 0x14, 0x14], False),
+            ([0x06, 0x33, 0x14, 0x14, 0x14], False),  # Equalizer with 3 bands
             ([0x06, 0xc3], False),
-            ([0x06, 0x2e], False),
-            ([0x06, 0xc1, 0x05], False),
+            ([0x06, 0x2e, 0x00], False),  # Set equalizer preset (0)
+            ([0x06, 0xc1, 0x05], False),  # Set inactive time (to 30 minutes, see inactive_time_minutes_decode_dict)
             ([0x06, 0x85, 0x0a], False),
             ([0x06, 0x37, 0x0a], False),
             ([0x06, 0xb2], False),
@@ -61,8 +61,8 @@ class ArctisNovaProWirelessDevice(DeviceManager):
             ([0x06, 0x89, 0x00], False),
             ([0x06, 0x27, 0x02], False),
             ([0x06, 0xb3], False),
-            ([0x06, 0x39], False),
-            ([0x06, 0xbf, 0x0a], False),
+            ([0x06, 0x39, 0x00], False),  # Set the sidetone to 0 (off) -> possible values: 0 (off), 1 (low), 2 (medium), 3 (high)
+            ([0x06, 0xbf, 0x0a], False),  # Set lights to 10 (out of 10)
             ([0x06, 0x43, 0x01], False),
             ([0x06, 0x69, 0x00], False),
             ([0x06, 0x3b, 0x00], False),
@@ -72,7 +72,7 @@ class ArctisNovaProWirelessDevice(DeviceManager):
             # Another series of queries (perhaps for confirmation?)
             ([0x06, 0xb7, 0x00], True),
             ([0x06, 0xb7, 0x00], True),
-            ([0x06, 0xb0, 0x00], True),
+            ([0x06, 0xb0, 0x00], True),  # Get device status
             ([0x06, 0x20, 0x00], True),
             ([0x06, 0xb7, 0x00], True),
         ]
