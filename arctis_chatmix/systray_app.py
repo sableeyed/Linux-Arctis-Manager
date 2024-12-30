@@ -25,8 +25,6 @@ class SystrayApp:
 
     def get_systray_icon_pixmap(self, path: Path) -> QPixmap:
         brush_color = QApplication.palette().color(QPalette.ColorRole.Text)
-        # brush_color_argb = f'#{hex(brush_color.alpha())[2:]}{hex(brush_color.red())[2:]}{
-        #     hex(brush_color.green())[2:]}{hex(brush_color.blue())[2:]}'
 
         xml_tree = ET.parse(path.absolute().as_posix())
         xml_root = xml_tree.getroot()
