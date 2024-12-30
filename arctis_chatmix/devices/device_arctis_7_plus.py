@@ -1,4 +1,17 @@
-from arctis_chatmix.device_manager import ChatMixState, DeviceManager, InterfaceEndpoint
+from typing import Literal
+from arctis_chatmix.device_manager import ChatMixState, DeviceManager, DeviceStatus, InterfaceEndpoint
+
+
+class ArctisNovaProWirelessDeviceStatus(DeviceStatus):
+    def validation_dict(self) -> dict[str, list[str] | dict[Literal['between'], list[int]] | dict[Literal['gt', 'lt'], int | float]]:
+        return {
+            'headset_battery_charge': {'between': [0, 1]},
+            'headset_power_status': ['offline', 'cable_charging', 'online'],
+        }
+
+
+BATTERY_MIN = 0x00
+BATTERY_MAX = 0x04
 
 
 class ArctisNovaProWirelessDevice(DeviceManager):
@@ -10,7 +23,10 @@ class ArctisNovaProWirelessDevice(DeviceManager):
 
     def manage_input_data(self, data: list[int], endpoint: InterfaceEndpoint) -> ChatMixState:
         if endpoint == self.utility_guess_endpoint(7, 'in'):
-            return ChatMixState(data[1] / 100, data[2] / 100, 1, 1)
+            # This probably needs some more work. Taken from original project.
+            # see https://github.com/Sapd/HeadsetControl/blob/master/src/devices/steelseries_arctis_7_plus.c#L103
+
+            return ChatMixState(data[1] / 100, data[2] / 100, 1, 1, ArctisNovaProWirelessDeviceStatus())
 
     def get_endpoint_addresses_to_listen(self) -> list[InterfaceEndpoint]:
         return self.utility_guess_endpoint(7, 'in')

@@ -1,3 +1,4 @@
+from typing import Literal
 from arctis_chatmix.device_manager import ChatMixState, DeviceManager, DeviceStatus, InterfaceEndpoint
 
 inactive_time_minutes_decode_dict = {
@@ -9,6 +10,31 @@ inactive_time_minutes_decode_dict = {
     5: 30,
     6: 60,
 }
+
+
+class ArctisNovaProWirelessDeviceStatus(DeviceStatus):
+    def validation_dict(self) -> dict[str, list[str] | dict[Literal['between'], list[int]] | dict[Literal['gt', 'lt'], int | float] | Literal['any', 'any_str', 'any_int', 'any_float']]:
+        return {
+            'bluetooth_powerup_state': ['on', 'off'],
+            'bluetooth_auto_mute': ['on', 'off', '-12db'],
+            'bluetooth_power_status': ['on', 'off'],
+            'bluetooth_connection': ['on', 'off'],
+
+            'wireless_mode': ['speed', 'range'],
+            'wireless_pairing': ['not_paired', 'paired_offline', 'connected'],
+
+            'headset_battery_charge': {'between': [0, 1]},
+            'charge_slot_battery_charge': {'between': [0, 1]},
+            'headset_power_status': ['offline', 'cable_charging', 'online'],
+
+            'transparent_noise_cancelling_level': {'between': [0, 1]},
+            'noise_cancelling': ['on', 'transparent', 'off'],
+
+            'mic_status': ['muted', 'unmuted'],
+            'mic_led_brightness': {'between': [0, 1]},
+
+            'auto_off_time_minutes': {'gte': 0},
+        }
 
 
 class ArctisNovaProWirelessDevice(DeviceManager):
@@ -23,10 +49,8 @@ class ArctisNovaProWirelessDevice(DeviceManager):
 
     def get_endpoint_addresses_to_listen(self) -> list[InterfaceEndpoint]:
         return [self.utility_guess_endpoint(7, 'in')]
-        # return [InterfaceEndpoint(7, 0)]  # The same interface/endpoint is used for both volume / mixer and device state
 
     def get_request_device_status(self):
-        # return InterfaceEndpoint(7, 1), [0x06, 0xb0]
         return self.utility_guess_endpoint(7, 'out'), [0x06, 0xb0]
 
     def init_device(self):
@@ -106,9 +130,9 @@ class ArctisNovaProWirelessDevice(DeviceManager):
                 self.chat_mix = data[3] / 100  # Ranges from 0 to 100
             elif len(data) >= 16 and data[0] == 0x06 and data[1] == 0xb0:
                 # https://github.com/Sapd/HeadsetControl/blob/master/src/devices/steelseries_arctis_nova_pro_wireless.c#L242
-                device_status = DeviceStatus(
+                device_status = ArctisNovaProWirelessDeviceStatus(
                     bluetooth_powerup_state='off' if data[2] == 0x00 else 'on',
-                    bluetooth_auto_mute='off' if data[3] == 0x00 else 'half' if data[3] == 0x01 else 'on',
+                    bluetooth_auto_mute='off' if data[3] == 0x00 else '-12db' if data[3] == 0x01 else 'on',
                     bluetooth_power_status='off' if data[4] == 0x01 else 'on',
                     bluetooth_connection='off' if data[5] == 0x00 else 'connected' if data[5] == 0x01 else 'disconnected',
                     headset_battery_charge=float(round(data[6] / 8, 2)),
