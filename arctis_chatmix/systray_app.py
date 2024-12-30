@@ -111,7 +111,6 @@ class SystrayApp:
 
         sections = [
             {
-                # , self.translations['menu']['headset_power_status_status'][status.headset_power_status] or status.headset_power_status}},
                 'headset_power_status': {'format': {'status': self.get_translation('menu.headset_power_status_status', status.headset_power_status)}},
                 'headset_battery_charge': {'format': {'status': int(status.headset_battery_charge*100)}},
                 'charge_slot_battery_charge': {'format': {'status': int(status.charge_slot_battery_charge*100)}},
