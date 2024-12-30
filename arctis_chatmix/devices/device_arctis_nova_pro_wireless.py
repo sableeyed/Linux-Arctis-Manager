@@ -22,7 +22,12 @@ class ArctisNovaProWirelessDevice(DeviceManager):
         return 0x12e0
 
     def get_endpoint_addresses_to_listen(self) -> list[InterfaceEndpoint]:
-        return [InterfaceEndpoint(7, 0)]  # The same interface/endpoint is used for both volume / mixer and device state
+        return [self.utility_guess_endpoint(7, 'in')]
+        # return [InterfaceEndpoint(7, 0)]  # The same interface/endpoint is used for both volume / mixer and device state
+
+    def get_request_device_status(self):
+        # return InterfaceEndpoint(7, 1), [0x06, 0xb0]
+        return self.utility_guess_endpoint(7, 'out'), [0x06, 0xb0]
 
     def init_device(self):
         '''
@@ -77,17 +82,13 @@ class ArctisNovaProWirelessDevice(DeviceManager):
             ([0x06, 0xb7, 0x00], True),
         ]
 
-        # 8th interface, 2nd endpoint. The 1st one is for receiving data from the DAC
-        commands_endpoint_address = self.device[0].interfaces()[7].endpoints()[1].bEndpointAddress
-
-        self.kernel_detach(InterfaceEndpoint(7, 1))
+        endpoint, _ = self.get_request_device_status()
+        commands_endpoint_address = self.device[0].interfaces()[endpoint.interface].endpoints()[endpoint.endpoint].bEndpointAddress
+        self.kernel_detach(endpoint)
 
         for command in commands:
             self.device.write(commands_endpoint_address, self.packet_0_filler(command[0], 91))
             # Ignore the responses for now, as I haven't figured out yet their significance.
-
-    def get_request_device_status(self):
-        return InterfaceEndpoint(7, 1), [0x06, 0xb0]
 
     def manage_input_data(self, data: list[int], endpoint: InterfaceEndpoint) -> ChatMixState:
         volume = 1

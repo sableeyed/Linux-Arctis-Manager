@@ -5,6 +5,7 @@ import logging
 from typing import Literal, Optional
 
 import usb.core
+import usb.util
 
 
 @dataclass(frozen=True)
@@ -171,14 +172,6 @@ class DeviceManager(ABC):
         '''
         pass
 
-    def get_request_device_status(self) -> tuple[Optional[InterfaceEndpoint], Optional[list[int]]]:
-        '''
-        If the device supports the device status, define the interface/endpoint and the request status message here.
-        It will be read by the manage_input_data function.
-        '''
-
-        return None, None
-
     def get_device_vendor_id(self) -> int:
         '''
         Get the vendor's identifier (should always be SteelSerie's)
@@ -212,6 +205,33 @@ class DeviceManager(ABC):
         Get the list of endpoint addresses to listen.
         '''
         pass
+
+    def get_request_device_status(self) -> tuple[Optional[InterfaceEndpoint], Optional[list[int]]]:
+        '''
+        If the device supports the device status, define the interface/endpoint and the request status message here.
+        It will be read by the manage_input_data function.
+        '''
+
+        return None, None
+
+    def utility_guess_endpoint(self, interface_index: int, direction_out: Literal['out', 'in']) -> Optional[InterfaceEndpoint]:
+        '''
+        Guess the endpoint index based on the interface index and the direction.
+        out: host-to-device
+        in: device-to-host
+        '''
+
+        if self.device is None:
+            self.log.debug('Device is not initialized yet.')
+
+            return None
+
+        interface = self.device[0].interfaces()[interface_index]
+        for endpoint_index, endpoint in enumerate(interface.endpoints()):
+            if usb.util.endpoint_direction(endpoint.bEndpointAddress) == usb.util.ENDPOINT_OUT if direction_out == 'out' else usb.util.ENDPOINT_IN:
+                return InterfaceEndpoint(interface_index, endpoint_index)
+
+        return None
 
     @abstractmethod
     def manage_input_data(self, data: list[int], endpoint: InterfaceEndpoint) -> ChatMixState:
