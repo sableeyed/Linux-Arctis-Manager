@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - System tray icon with dynamic status, depending on what the device is able to provide via DeviceStatus dataclass
 - DeviceStatus for the following devices:
   - Arctis Nova Pro Wireless
+- Added translation files (dynamically loaded via LOCALE)
 
 ## [1.3.1]
 
