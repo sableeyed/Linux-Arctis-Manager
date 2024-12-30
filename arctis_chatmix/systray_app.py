@@ -94,33 +94,45 @@ class SystrayApp:
         self.log.debug('Received shutdown signal, shutting down.')
         self.app.quit()
 
+    def get_translation(self, dot_notation_key: str, to_translate: str) -> str:
+        keys = dot_notation_key.split('.')
+        node = self.translations
+
+        for key in keys:
+            if node.get(key, None) is None:
+                return to_translate
+            node = node[key]
+
+        return node[to_translate]
+
     def on_device_status_update(self, status: DeviceStatus) -> None:
         if status is None:
             return
 
         sections = [
             {
-                'headset_power_status': {'format': {'status': self.translations['menu']['headset_power_status_status'][status.headset_power_status] or status.headset_power_status}},
+                # , self.translations['menu']['headset_power_status_status'][status.headset_power_status] or status.headset_power_status}},
+                'headset_power_status': {'format': {'status': self.get_translation('menu.headset_power_status_status', status.headset_power_status)}},
                 'headset_battery_charge': {'format': {'status': int(status.headset_battery_charge*100)}},
                 'charge_slot_battery_charge': {'format': {'status': int(status.charge_slot_battery_charge*100)}},
             },
             {
-                'mic_status': {'format': {'status': self.translations['menu']['mic_status_status'][status.mic_status] or status.mic_status}},
+                'mic_status': {'format': {'status': self.get_translation('menu.mic_status_status', status.mic_status)}},
                 'mic_led_brightness': {'format': {'status': int(status.mic_led_brightness * 100)}},
             },
             {
-                'noise_cancelling': {'format': {'status': self.translations['menu']['noise_cancelling_status'][status.noise_cancelling] or status.noise_cancelling}},
+                'noise_cancelling': {'format': {'status': self.get_translation('menu.noise_cancelling_status', status.noise_cancelling)}},
                 'transparent_noise_cancelling_level': {'format': {'status': int(status.transparent_noise_cancelling_level*100)}},
             },
             {
-                'wireless_pairing': {'format': {'status': self.translations['menu']['wireless_pairing_status'][status.wireless_pairing] or status.wireless_pairing}},
-                'wireless_mode': {'format': {'mode': self.translations['menu']['wireless_mode_status'][status.wireless_mode] or status.wireless_mode}},
+                'wireless_pairing': {'format': {'status': self.get_translation('menu.wireless_pairing_status', status.wireless_pairing)}},
+                'wireless_mode': {'format': {'mode': self.get_translation('menu.wireless_mode_status', status.wireless_mode)}},
             },
             {
-                'bluetooth_powerup_state': {'format': {'status': self.translations['menu']['on_off_state'][status.bluetooth_powerup_state] or status.bluetooth_powerup_state}},
-                'bluetooth_power_status': {'format': {'status': self.translations['menu']['on_off_state'][status.bluetooth_power_status] or status.bluetooth_power_status}},
-                'bluetooth_auto_mute': {'format': {'status': self.translations['menu']['bluetooth_auto_mute_status'][status.bluetooth_auto_mute] or status.bluetooth_auto_mute}},
-                'bluetooth_connection': {'format': {'status': self.translations['menu']['on_off_state'][status.bluetooth_connection] or status.bluetooth_connection}},
+                'bluetooth_powerup_state': {'format': {'status': self.get_translation('menu.on_off_state', status.bluetooth_powerup_state)}},
+                'bluetooth_power_status': {'format': {'status': self.get_translation('menu.on_off_state', status.bluetooth_power_status)}},
+                'bluetooth_auto_mute': {'format': {'status': self.get_translation('menu.bluetooth_auto_mute_status', status.bluetooth_auto_mute)}},
+                'bluetooth_connection': {'format': {'status': self.get_translation('menu.on_off_state', status.bluetooth_connection)}},
             }
         ]
 
