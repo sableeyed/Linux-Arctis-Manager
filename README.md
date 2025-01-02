@@ -53,7 +53,7 @@ The software has been rewritten from scratch from the original project to have a
 In order to support a new device you need to:
 
 - add a new set of rules in [system-config/91-steelseries-arctis.rules](system-config/91-steelseries-arctis.rules) -> if having troubles with udev selector with composite USB devices, you might start from `udevadm info --attribute-walk --name=/dev/input/by-id/usb-SteelSeries_Arctis_[your specific device here]`. Take a look at the Nova Pro Wireless's rules to get an idea.
-- Add a new [DeviceManager](arctis_chatmix/device_manager.py) and its relative [DeviceStatus](arctis_chatmix/device_manager.py) in [arctis_chatmix/devices/](arctis_chatmix/devices/). Read the [Arctis Nova Pro Wireless](arctis_chatmix/devices/device_arctis_nova_pro_wireless.py) definition to get the idea.
+- Add a new [DeviceManager](arctis_chatmix/device_manager/device_manager.py) and its relative [DeviceStatus](arctis_chatmix/device_manager/device_status.py) in [arctis_chatmix/devices/](arctis_chatmix/devices/). Read the [Arctis Nova Pro Wireless](arctis_chatmix/devices/device_arctis_nova_pro_wireless.py) definition to get the idea.
 - Update the [lang/](lang/) json files, if you introduced new `DeviceStatus` attributes and/or values. By default untranslatable items will go untranslated.
 
 The new device will automatically be registered for you in the application.
