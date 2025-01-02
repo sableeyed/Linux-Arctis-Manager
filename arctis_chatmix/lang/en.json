@@ -4,11 +4,12 @@
         "settings_window_title": "Arctis ChatMix settings"
     },
     "sections": {
-        "battery": "Battery",
-        "microphone": "Microphone",
         "anc": "ANC",
-        "wireless_mode": "Wireless mode",
-        "bluetooth": "Bluetooth"
+        "battery": "Battery",
+        "bluetooth": "Bluetooth",
+        "microphone": "Microphone",
+        "power_management": "Power management",
+        "wireless": "Wireless"
     },
 
     "settings": {

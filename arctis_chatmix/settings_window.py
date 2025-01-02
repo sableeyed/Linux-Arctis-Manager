@@ -18,7 +18,9 @@ class SettingsWindow(QMainWindow):
     def __init__(self, sections: dict[str, list[DeviceSetting]]):
         super().__init__()
 
-        self.setWindowTitle(Translations.get_instance().get_translation('app', 'settings_window_title'))
+        i18n = Translations.get_instance()
+
+        self.setWindowTitle(i18n.get_translation('app', 'settings_window_title'))
         # Note: Wayland does not support window icons (yet?)
         self.setWindowIcon(QIcon(get_icon_pixmap()))
 
@@ -29,7 +31,7 @@ class SettingsWindow(QMainWindow):
 
         # Create a list widget for sections on the left
         section_list = QListWidget()
-        section_list.addItems(sections.keys())
+        section_list.addItems([i18n.get_translation('sections', section) for section in sections.keys()])
         section_list.setFixedWidth(max(section_list.sizeHintForColumn(0), 200))
         section_list.currentRowChanged.connect(self.change_panel)
 
