@@ -1,6 +1,10 @@
 from typing import Literal
-from arctis_chatmix.device_manager import ChatMixState, DeviceManager, DeviceStatus, InterfaceEndpoint
-from arctis_chatmix.device_manager.device_settings import DeviceSetting, SliderSetting, ToggleSetting
+
+from arctis_chatmix.device_manager import (ChatMixState, DeviceManager,
+                                           DeviceStatus, InterfaceEndpoint)
+from arctis_chatmix.device_manager.device_settings import (DeviceSetting,
+                                                           SliderSetting,
+                                                           ToggleSetting)
 
 INACTIVE_TIME_MINUTES = {
     0: 0,

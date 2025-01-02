@@ -7,7 +7,9 @@ from PyQt6.QtWidgets import (QFormLayout, QHBoxLayout, QLabel, QLayout,
                              QWidget)
 
 from arctis_chatmix.custom_widgets.q_toggle import QToggle
-from arctis_chatmix.device_manager.device_settings import DeviceSetting, SliderSetting, ToggleSetting
+from arctis_chatmix.device_manager.device_settings import (DeviceSetting,
+                                                           SliderSetting,
+                                                           ToggleSetting)
 from arctis_chatmix.qt_utils import get_icon_pixmap
 from arctis_chatmix.translations import Translations
 
