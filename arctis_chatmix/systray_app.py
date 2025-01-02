@@ -11,6 +11,8 @@ from PyQt6.QtGui import QAction, QIcon, QImage, QPainter, QPixmap, QPalette
 from PyQt6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 
 from arctis_chatmix.device_manager import DeviceStatus
+from arctis_chatmix.settings_window import SettingsWindow
+from arctis_chatmix.translations import Translations
 
 
 class SystrayApp:
@@ -20,8 +22,6 @@ class SystrayApp:
     tray_icon: QSystemTrayIcon
     menu: QMenu
     menu_entries: dict[str, QAction]
-
-    translations: dict
 
     def get_systray_icon_pixmap(self, path: Path) -> QPixmap:
         brush_color = QApplication.palette().color(QPalette.ColorRole.Text)
@@ -70,11 +70,6 @@ class SystrayApp:
         lang_code, _ = locale.getdefaultlocale()
         lang_code = lang_code.split('_')[0]
 
-        translation_json_path = Path(__file__).parent.joinpath('lang', f'{lang_code}.json')
-        if not translation_json_path.is_file():
-            translation_json_path = Path(__file__).parent.joinpath('lang', 'en.json')
-        self.translations = json.load(translation_json_path.open('r'))
-
         self.menu = QMenu()
         self.tray_icon.setContextMenu(self.menu)
 
@@ -92,51 +87,49 @@ class SystrayApp:
         self.log.debug('Received shutdown signal, shutting down.')
         self.app.quit()
 
-    def get_translation(self, dot_notation_key: str, to_translate: str) -> str:
-        keys = dot_notation_key.split('.')
-        node = self.translations
+    def get_config_status_sections(self, status: DeviceStatus) -> dict[str, dict]:
+        i18n = Translations.get_instance()
 
-        for key in keys:
-            if node.get(key, None) is None:
-                return to_translate
-            node = node[key]
-
-        return node[to_translate]
+        return {
+            'battery': {
+                'headset_power_status': {'format': {'status': i18n.get_translation('menu.headset_power_status_status', status.headset_power_status)}},
+                'headset_battery_charge': {'format': {'status': int(status.headset_battery_charge*100)}},
+                'charge_slot_battery_charge': {'format': {'status': int(status.charge_slot_battery_charge*100)}},
+            },
+            'microphone': {
+                'mic_status': {'format': {'status': i18n.get_translation('menu.mic_status_status', status.mic_status)}},
+                'mic_led_brightness': {'format': {'status': int(status.mic_led_brightness * 100)}},
+            },
+            'anc': {
+                'noise_cancelling': {'format': {'status': i18n.get_translation('menu.noise_cancelling_status', status.noise_cancelling)}},
+                'transparent_noise_cancelling_level': {'format': {'status': int(status.transparent_noise_cancelling_level*100)}},
+            },
+            'wireless_mode': {
+                'wireless_pairing': {'format': {'status': i18n.get_translation('menu.wireless_pairing_status', status.wireless_pairing)}},
+                'wireless_mode': {'format': {'mode': i18n.get_translation('menu.wireless_mode_status', status.wireless_mode)}},
+            },
+            'bluetooth': {
+                'bluetooth_powerup_state': {'format': {'status': i18n.get_translation('menu.on_off_state', status.bluetooth_powerup_state)}},
+                'bluetooth_power_status': {'format': {'status': i18n.get_translation('menu.on_off_state', status.bluetooth_power_status)}},
+                'bluetooth_auto_mute': {'format': {'status': i18n.get_translation('menu.bluetooth_auto_mute_status', status.bluetooth_auto_mute)}},
+                'bluetooth_connection': {'format': {'status': i18n.get_translation('menu.on_off_state', status.bluetooth_connection)}},
+            }
+        }
 
     def on_device_status_update(self, status: DeviceStatus) -> None:
         if status is None:
             return
 
-        sections = [
-            {
-                'headset_power_status': {'format': {'status': self.get_translation('menu.headset_power_status_status', status.headset_power_status)}},
-                'headset_battery_charge': {'format': {'status': int(status.headset_battery_charge*100)}},
-                'charge_slot_battery_charge': {'format': {'status': int(status.charge_slot_battery_charge*100)}},
-            },
-            {
-                'mic_status': {'format': {'status': self.get_translation('menu.mic_status_status', status.mic_status)}},
-                'mic_led_brightness': {'format': {'status': int(status.mic_led_brightness * 100)}},
-            },
-            {
-                'noise_cancelling': {'format': {'status': self.get_translation('menu.noise_cancelling_status', status.noise_cancelling)}},
-                'transparent_noise_cancelling_level': {'format': {'status': int(status.transparent_noise_cancelling_level*100)}},
-            },
-            {
-                'wireless_pairing': {'format': {'status': self.get_translation('menu.wireless_pairing_status', status.wireless_pairing)}},
-                'wireless_mode': {'format': {'mode': self.get_translation('menu.wireless_mode_status', status.wireless_mode)}},
-            },
-            {
-                'bluetooth_powerup_state': {'format': {'status': self.get_translation('menu.on_off_state', status.bluetooth_powerup_state)}},
-                'bluetooth_power_status': {'format': {'status': self.get_translation('menu.on_off_state', status.bluetooth_power_status)}},
-                'bluetooth_auto_mute': {'format': {'status': self.get_translation('menu.bluetooth_auto_mute_status', status.bluetooth_auto_mute)}},
-                'bluetooth_connection': {'format': {'status': self.get_translation('menu.on_off_state', status.bluetooth_connection)}},
-            }
-        ]
+        has_previous_section = False
 
-        for i, section in enumerate(sections):
-            if i > 0:
-                if any((val for key, val in section.items() if getattr(status, key) is not None)):
-                    self.menu.addSeparator()
+        for section in self.get_config_status_sections(status).values():
+            if not any((val for key, val in section.items() if getattr(status, key) is not None)):
+                continue
+
+            if has_previous_section:
+                self.menu.addSeparator()
+            has_previous_section = True
+
             for key, attrs in section.items():
                 if getattr(status, key) is not None:
                     self.add_menu_entry(key, attrs['format'])
@@ -145,19 +138,30 @@ class SystrayApp:
             if getattr(status, entry) is None:
                 self.remove_menu_entry(entry)
 
+        if has_previous_section:
+            self.menu.addSeparator()
+
+        if not '_settings' in self.menu_entries:
+            self.menu_entries['_settings'] = QAction(Translations.get_instance().get_translation('app', 'settings_label'))
+            self.menu_entries['_settings'].triggered.connect(self.open_settings_window)
+            self.menu.addAction(self.menu_entries['_settings'])
+
     def add_menu_entry(self, entry: str, format: dict[str, Any], callback: Callable[[], None] = None):
         if entry not in self.menu_entries:
             self.menu_entries[entry] = QAction('')
-            self.menu_entries[entry].setDisabled(callback is None)
+            self.menu_entries[entry].setDisabled(True)
             if callback is not None:
                 self.menu_entries[entry].triggered.connect(callback)
             self.menu.addAction(self.menu_entries[entry])
 
-        self.menu_entries[entry].setText(
-            self.translations['menu'][f'{entry}_label'].format(**format)
-        )
+        self.menu_entries[entry].setText(Translations.get_instance().get_translation('menu', f'{entry}_label').format(**format))
 
     def remove_menu_entry(self, entry: str):
         if entry in self.menu_entries:
             self.menu.removeAction(self.menu_entries[entry])
             del self.menu_entries[entry]
+
+    def open_settings_window(self):
+        self._settings_window = SettingsWindow()
+
+        self._settings_window.show()

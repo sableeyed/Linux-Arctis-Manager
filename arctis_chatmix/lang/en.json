@@ -1,4 +1,15 @@
 {
+    "app": {
+        "settings_label": "Settings",
+        "settings_window_title": "Arctis ChatMix settings"
+    },
+    "sections": {
+        "battery": "Battery",
+        "microphone": "Microphone",
+        "anc": "ANC",
+        "wireless_mode": "Wireless mode",
+        "bluetooth": "Bluetooth"
+    },
     "menu": {
         "headset_power_status_label": "Headset power status: {status}",
         "headset_power_status_status": {
