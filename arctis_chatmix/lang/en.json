@@ -10,6 +10,20 @@
         "wireless_mode": "Wireless mode",
         "bluetooth": "Bluetooth"
     },
+
+    "settings": {
+        "headset_power_status": "Headset power status",
+        "mic_gain": "Gain",
+        "wireless_mode":"Wireless mode"
+    },
+    "setting_values": {
+        "mic_gain_low": "Low",
+        "mic_gain_high": "High",
+
+        "wireless_mode_speed": "Speed",
+        "wireless_mode_range": "Range"
+    },
+
     "menu": {
         "headset_power_status_label": "Headset power status: {status}",
         "headset_power_status_status": {

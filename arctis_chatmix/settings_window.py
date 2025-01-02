@@ -7,6 +7,7 @@ from PyQt6.QtWidgets import (QFormLayout, QHBoxLayout, QLabel, QLayout,
                              QWidget)
 
 from arctis_chatmix.custom_widgets.q_toggle import QToggle
+from arctis_chatmix.device_manager.device_settings import DeviceSetting, ToggleSetting
 from arctis_chatmix.qt_utils import get_icon_pixmap
 from arctis_chatmix.translations import Translations
 
@@ -24,12 +25,15 @@ class SettingsWindow(QMainWindow):
         available_geometry = self.screen().availableGeometry()
         self.resize(min(800, available_geometry.width()), min(600, available_geometry.height()))
 
+        def test_callback(*args, **kwargs):
+            print(args, kwargs)
+
         # TODO make this dynamic (init, translations)
         sections = {
             'Microphone': {
                 'Volume': {'type': 'slider', 'configuration': {'min': 0x01, 'max': 0x10, 'step': 1, 'default_value': 0x10, 'min_label': 'Muted', 'max_label': '100%'}},
                 'Side tone': {'type': 'slider', 'configuration': {'min': 0x00, 'max': 0x03, 'step': 1, 'default_value': 0x00, 'min_label': 'None', 'max_label': 'high'}},
-                'Gain': {'type': 'toggle', 'configuration': {'off_label': 'Low', 'on_label': 'High', 'toggled': True}},
+                'Gain': ToggleSetting('mic_gain', 'mic_gain_low', 'mic_gain_high', True, test_callback),
             },
             'Active Noise Cancelling': {
                 'Level': {'type': 'slider', 'configuration': {'min': 0x00, 'max': 0x03, 'step': 1, 'default_value': 0x00, 'min_label': 'Disabled', 'max_label': 'High'}},
@@ -38,7 +42,7 @@ class SettingsWindow(QMainWindow):
                 'Shutdown after': {'type': 'slider', 'configuration': {'min': 0x00, 'max': 0x06, 'step': 1, 'default_value': 0x04, 'min_label': 'Disabled', 'max_label': '60 minutes'}},
             },
             'Wireless': {
-                'Wireless mode': {'type': 'toggle', 'configuration': {'off_label': 'Speed', 'on_label': 'Range', 'toggled': False}},
+                'Wireless mode': ToggleSetting('wireless_mode', 'wireless_mode_speed', 'wireless_mode_range', False, test_callback),
             }
         }
 
@@ -50,9 +54,6 @@ class SettingsWindow(QMainWindow):
 
         # Create a stacked widget for panels on the right
         panel_stack = QStackedWidget()
-
-        def test_callback(*args, **kwargs):
-            print(args, kwargs)
 
         # Create and add panels to the stacked widget
         for settings in sections.values():
@@ -67,6 +68,9 @@ class SettingsWindow(QMainWindow):
                 w_layout.addWidget(QLabel(f'{setting}: '))
 
                 widget_layout: QLayout = None
+                if isinstance(options, DeviceSetting):
+                    options = options.to_settings_dict()
+
                 if options['type'] == 'slider':
                     config = options['configuration']
                     widget_layout = self.get_slider_configuration_widget(
