@@ -26,7 +26,7 @@ class ArctisChatMixDaemon:
 
     previous_sink: str
 
-    device_status_callbacks: list[Callable[[DeviceStatus], None]]
+    device_status_callbacks: list[Callable[[DeviceManager, DeviceStatus], None]]
     shutdown_callbacks: list[Callable[[], None]]
 
     _shutdown: bool
@@ -268,7 +268,7 @@ class ArctisChatMixDaemon:
                 # Propagate the device status to any registered listener
                 if chatmix_state.device_status is not None:
                     for callback in self.device_status_callbacks:
-                        callback(chatmix_state.device_status)
+                        callback(self.device_manager, chatmix_state.device_status)
 
             except Exception as e:
                 if not isinstance(e, usb.core.USBTimeoutError):
@@ -308,7 +308,7 @@ class ArctisChatMixDaemon:
                         self.log.error(f'Failed to request device status.', exc_info=True)
                         self.die_gracefully(error_phase="USB status request")
 
-    def register_device_change_callback(self, callback: Callable[[DeviceStatus], None]) -> None:
+    def register_device_change_callback(self, callback: Callable[[DeviceManager, DeviceStatus], None]) -> None:
         self.device_status_callbacks.append(callback)
 
     def register_shutdown_callback(self, callback: Callable[[], None]) -> None:

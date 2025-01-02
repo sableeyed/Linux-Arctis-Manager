@@ -1,5 +1,6 @@
 from typing import Literal
 from arctis_chatmix.device_manager import ChatMixState, DeviceManager, DeviceStatus, InterfaceEndpoint
+from arctis_chatmix.device_manager.device_settings import DeviceSetting, SliderSetting, ToggleSetting
 
 INACTIVE_TIME_MINUTES = {
     0: 0,
@@ -166,3 +167,21 @@ class ArctisNovaProWirelessDevice(DeviceManager):
     @staticmethod
     def packet_0_filler(packet: list[int], size: int):
         return [*packet, *[0 for _ in range(size - len(packet))]]
+
+    def get_configurable_settings(self) -> dict[str, list[DeviceSetting]]:
+        return {
+            'Microphone': [
+                SliderSetting('mic_volume', 'mic_volume_muted', 'mic_volume_max', 0x01, 0x10, 1, 0x10, lambda x: print(x)),
+                SliderSetting('mic_side_tone', 'mic_side_tone_none', 'mic_side_tone_high', 0x00, 0x03, 1, 0x00, lambda x: print(x)),
+                ToggleSetting('mic_gain', 'mic_gain_low', 'mic_gain_high', True, lambda x: print(x)),
+            ],
+            'Active Noise Cancelling': [
+                SliderSetting('anc_level', 'anc_level_low', 'anc_level_high', 0x00, 0x03, 1, 0x00, lambda x: print(x)),
+            ],
+            'Power Management': [
+                SliderSetting('pm_shutdown', 'pm_shutdown_disabled', 'pm_shutdown_60_minutes', 0x00, 0x06, 1, 0x04, lambda x: print(x)),
+            ],
+            'Wireless': [
+                ToggleSetting('wireless_mode', 'wireless_mode_speed', 'wireless_mode_range', False, lambda x: print(x)),
+            ],
+        }

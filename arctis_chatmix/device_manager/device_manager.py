@@ -9,6 +9,7 @@ import usb.util
 
 from arctis_chatmix.device_manager.channel_position import ChannelPosition
 from arctis_chatmix.device_manager.chat_mix_state import ChatMixState
+from arctis_chatmix.device_manager.device_settings import DeviceSetting
 from arctis_chatmix.device_manager.interface_endpoint import InterfaceEndpoint
 
 
@@ -82,6 +83,16 @@ class DeviceManager(ABC):
         Get the list of endpoint addresses to listen.
         '''
         pass
+
+    def get_configurable_settings(self) -> dict[str, list[DeviceSetting]]:
+        '''
+        Get the list of configurable settings, split in sections.
+        For example: {
+            'Section1: [{ToggleSetting(...), SliderSetting(...)}, ...],
+            'Section2': [...]
+        }
+        '''
+        return {}
 
     def get_request_device_status(self) -> tuple[Optional[InterfaceEndpoint], Optional[list[int]]]:
         '''

@@ -13,7 +13,7 @@ from arctis_chatmix.translations import Translations
 
 
 class SettingsWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, sections: dict[str, list[DeviceSetting]]):
         super().__init__()
 
         self.setWindowTitle(Translations.get_instance().get_translation('app', 'settings_window_title'))
@@ -24,27 +24,6 @@ class SettingsWindow(QMainWindow):
         self.setMinimumSize(800, 600)
         available_geometry = self.screen().availableGeometry()
         self.resize(min(800, available_geometry.width()), min(600, available_geometry.height()))
-
-        def test_callback(*args, **kwargs):
-            print(args, kwargs)
-
-        # TODO make this dynamic (init, translations)
-        sections: dict[str, list[DeviceSetting]] = {
-            'Microphone': [
-                SliderSetting('mic_volume', 'mic_volume_muted', 'mic_volume_max', 0x01, 0x10, 1, 0x10, test_callback),
-                SliderSetting('mic_side_tone', 'mic_side_tone_none', 'mic_side_tone_high', 0x00, 0x03, 1, 0x00, test_callback),
-                ToggleSetting('mic_gain', 'mic_gain_low', 'mic_gain_high', True, test_callback),
-            ],
-            'Active Noise Cancelling': [
-                SliderSetting('anc_level', 'anc_level_low', 'anc_level_high', 0x00, 0x03, 1, 0x00, test_callback),
-            ],
-            'Power Management': [
-                SliderSetting('pm_shutdown', 'pm_shutdown_disabled', 'pm_shutdown_60_minutes', 0x00, 0x06, 1, 0x04, test_callback),
-            ],
-            'Wireless': [
-                ToggleSetting('wireless_mode', 'wireless_mode_speed', 'wireless_mode_range', False, test_callback),
-            ],
-        }
 
         # Create a list widget for sections on the left
         section_list = QListWidget()

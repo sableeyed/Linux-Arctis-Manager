@@ -11,6 +11,7 @@ from PyQt6.QtGui import QAction, QIcon, QImage, QPainter, QPalette, QPixmap
 from PyQt6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 
 from arctis_chatmix.device_manager import DeviceStatus
+from arctis_chatmix.device_manager.device_manager import DeviceManager
 from arctis_chatmix.qt_utils import get_icon_pixmap
 from arctis_chatmix.settings_window import SettingsWindow
 from arctis_chatmix.translations import Translations
@@ -116,8 +117,8 @@ class SystrayApp:
             }
         }
 
-    def on_device_status_update(self, status: DeviceStatus) -> None:
-        if status is None:
+    def on_device_status_update(self, device_manager: DeviceManager, status: DeviceStatus) -> None:
+        if device_manager is None or status is None:
             return
 
         has_previous_section = False
@@ -141,7 +142,9 @@ class SystrayApp:
         if has_previous_section:
             self.menu.addSeparator()
 
-        if not '_settings' in self.menu_entries:
+        self._device_manager = device_manager
+
+        if len(device_manager.get_configurable_settings().keys()) > 0 and not '_settings' in self.menu_entries:
             self.menu_entries['_settings'] = QAction(Translations.get_instance().get_translation('app', 'settings_label'))
             self.menu_entries['_settings'].triggered.connect(self.open_settings_window)
             self.menu.addAction(self.menu_entries['_settings'])
@@ -162,6 +165,6 @@ class SystrayApp:
             del self.menu_entries[entry]
 
     def open_settings_window(self):
-        self._settings_window = SettingsWindow()
+        self._settings_window = SettingsWindow(self._device_manager.get_configurable_settings())
 
         self._settings_window.show()
