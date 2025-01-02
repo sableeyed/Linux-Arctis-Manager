@@ -7,10 +7,11 @@ from typing import Any, Callable
 
 from PyQt6 import QtSvg
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QAction, QIcon, QImage, QPainter, QPixmap, QPalette
+from PyQt6.QtGui import QAction, QIcon, QImage, QPainter, QPalette, QPixmap
 from PyQt6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 
 from arctis_chatmix.device_manager import DeviceStatus
+from arctis_chatmix.qt_utils import get_icon_pixmap
 from arctis_chatmix.settings_window import SettingsWindow
 from arctis_chatmix.translations import Translations
 
@@ -59,8 +60,7 @@ class SystrayApp:
         self.setup_logger(log_level)
         self.app = app
 
-        svg_path = Path(__file__).parent.joinpath('images', 'steelseries_logo.svg')
-        pixmap = self.get_systray_icon_pixmap(svg_path)
+        pixmap = get_icon_pixmap()
 
         self.tray_icon = QSystemTrayIcon(QIcon(pixmap), parent=self.app)
         self.tray_icon.setToolTip('Arctis ChatMix')
