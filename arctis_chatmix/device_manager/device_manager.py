@@ -10,6 +10,7 @@ import usb.util
 from arctis_chatmix.device_manager.channel_position import ChannelPosition
 from arctis_chatmix.device_manager.chat_mix_state import ChatMixState
 from arctis_chatmix.device_manager.device_settings import DeviceSetting
+from arctis_chatmix.device_manager.device_status import DeviceStatus
 from arctis_chatmix.device_manager.interface_endpoint import InterfaceEndpoint
 
 
@@ -84,7 +85,7 @@ class DeviceManager(ABC):
         '''
         pass
 
-    def get_configurable_settings(self) -> dict[str, list[DeviceSetting]]:
+    def get_configurable_settings(self, state: Optional[DeviceStatus] = None) -> dict[str, list[DeviceSetting]]:
         '''
         Get the list of configurable settings, split in sections.
         For example: {

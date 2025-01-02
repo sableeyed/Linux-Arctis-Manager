@@ -143,6 +143,7 @@ class SystrayApp:
             self.menu.addSeparator()
 
         self._device_manager = device_manager
+        self._device_status = status
 
         if len(device_manager.get_configurable_settings().keys()) > 0 and not '_settings' in self.menu_entries:
             self.menu_entries['_settings'] = QAction(Translations.get_instance().get_translation('app', 'settings_label'))
@@ -165,6 +166,8 @@ class SystrayApp:
             del self.menu_entries[entry]
 
     def open_settings_window(self):
-        self._settings_window = SettingsWindow(self._device_manager.get_configurable_settings())
+        self._settings_window = SettingsWindow(
+            self._device_manager.get_configurable_settings(self._device_status)
+        )
 
         self._settings_window.show()

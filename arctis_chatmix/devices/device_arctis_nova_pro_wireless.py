@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, Optional
 
 from arctis_chatmix.device_manager import (ChatMixState, DeviceManager,
                                            DeviceStatus, InterfaceEndpoint)
@@ -172,7 +172,9 @@ class ArctisNovaProWirelessDevice(DeviceManager):
     def packet_0_filler(packet: list[int], size: int):
         return [*packet, *[0 for _ in range(size - len(packet))]]
 
-    def get_configurable_settings(self) -> dict[str, list[DeviceSetting]]:
+    def get_configurable_settings(self, state: Optional[DeviceStatus] = None) -> dict[str, list[DeviceSetting]]:
+        # TODO: depend on state for default values
+
         return {
             'microphone': [
                 SliderSetting('mic_volume', 'mic_volume_muted', 'mic_volume_max', 0x01, 0x10, 1, 0x10, lambda x: print(x)),
