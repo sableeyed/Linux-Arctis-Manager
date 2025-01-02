@@ -13,12 +13,30 @@
 
     "settings": {
         "headset_power_status": "Headset power status",
+
+        "mic_volume": "Volume",
+        "mic_side_tone": "Side tone",
         "mic_gain": "Gain",
-        "wireless_mode":"Wireless mode"
+
+        "anc_level": "Level",
+
+        "wireless_mode":"Wireless mode",
+
+        "pm_shutdown": "Shutdown after"
     },
     "setting_values": {
+        "anc_level_low": "Low",
+        "anc_level_high": "High",
+
+        "mic_volume_muted": "Muted",
+        "mic_volume_max": "100%",
         "mic_gain_low": "Low",
         "mic_gain_high": "High",
+        "mic_side_tone_none": "None",
+        "mic_side_tone_high": "High",
+
+        "pm_shutdown_disabled": "Disabled",
+        "pm_shutdown_60_minutes": "60 minutes",
 
         "wireless_mode_speed": "Speed",
         "wireless_mode_range": "Range"

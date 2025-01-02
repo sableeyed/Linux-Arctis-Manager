@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import (QFormLayout, QHBoxLayout, QLabel, QLayout,
                              QWidget)
 
 from arctis_chatmix.custom_widgets.q_toggle import QToggle
-from arctis_chatmix.device_manager.device_settings import DeviceSetting, ToggleSetting
+from arctis_chatmix.device_manager.device_settings import DeviceSetting, SliderSetting, ToggleSetting
 from arctis_chatmix.qt_utils import get_icon_pixmap
 from arctis_chatmix.translations import Translations
 
@@ -29,21 +29,21 @@ class SettingsWindow(QMainWindow):
             print(args, kwargs)
 
         # TODO make this dynamic (init, translations)
-        sections = {
-            'Microphone': {
-                'Volume': {'type': 'slider', 'configuration': {'min': 0x01, 'max': 0x10, 'step': 1, 'default_value': 0x10, 'min_label': 'Muted', 'max_label': '100%'}},
-                'Side tone': {'type': 'slider', 'configuration': {'min': 0x00, 'max': 0x03, 'step': 1, 'default_value': 0x00, 'min_label': 'None', 'max_label': 'high'}},
-                'Gain': ToggleSetting('mic_gain', 'mic_gain_low', 'mic_gain_high', True, test_callback),
-            },
-            'Active Noise Cancelling': {
-                'Level': {'type': 'slider', 'configuration': {'min': 0x00, 'max': 0x03, 'step': 1, 'default_value': 0x00, 'min_label': 'Disabled', 'max_label': 'High'}},
-            },
-            'Power Management': {
-                'Shutdown after': {'type': 'slider', 'configuration': {'min': 0x00, 'max': 0x06, 'step': 1, 'default_value': 0x04, 'min_label': 'Disabled', 'max_label': '60 minutes'}},
-            },
-            'Wireless': {
-                'Wireless mode': ToggleSetting('wireless_mode', 'wireless_mode_speed', 'wireless_mode_range', False, test_callback),
-            }
+        sections: dict[str, list[DeviceSetting]] = {
+            'Microphone': [
+                SliderSetting('mic_volume', 'mic_volume_muted', 'mic_volume_max', 0x01, 0x10, 1, 0x10, test_callback),
+                SliderSetting('mic_side_tone', 'mic_side_tone_none', 'mic_side_tone_high', 0x00, 0x03, 1, 0x00, test_callback),
+                ToggleSetting('mic_gain', 'mic_gain_low', 'mic_gain_high', True, test_callback),
+            ],
+            'Active Noise Cancelling': [
+                SliderSetting('anc_level', 'anc_level_low', 'anc_level_high', 0x00, 0x03, 1, 0x00, test_callback),
+            ],
+            'Power Management': [
+                SliderSetting('pm_shutdown', 'pm_shutdown_disabled', 'pm_shutdown_60_minutes', 0x00, 0x06, 1, 0x04, test_callback),
+            ],
+            'Wireless': [
+                ToggleSetting('wireless_mode', 'wireless_mode_speed', 'wireless_mode_range', False, test_callback),
+            ],
         }
 
         # Create a list widget for sections on the left
@@ -61,32 +61,28 @@ class SettingsWindow(QMainWindow):
             layout = QFormLayout()
             layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-            for setting, options in settings.items():
+            for setting in settings:
                 widget_layout = QWidget()
                 w_layout = QHBoxLayout()
                 widget_layout.setLayout(w_layout)
-                w_layout.addWidget(QLabel(f'{setting}: '))
+                w_layout.addWidget(QLabel(f'{setting.name}: '))
 
                 widget_layout: QLayout = None
-                if isinstance(options, DeviceSetting):
-                    options = options.to_settings_dict()
 
-                if options['type'] == 'slider':
-                    config = options['configuration']
+                if isinstance(setting, SliderSetting):
                     widget_layout = self.get_slider_configuration_widget(
-                        config['min'], config['max'], config['step'],
-                        config['default_value'], config['min_label'], config['max_label'],
-                        test_callback,
+                        setting.min_value, setting.max_value, setting.step,
+                        setting.current_state, setting.min_label, setting.max_label,
+                        setting.on_value_change
                     )
-                elif options['type'] == 'toggle':
-                    config = options['configuration']
+                elif isinstance(setting, ToggleSetting):
                     widget_layout = self.get_checkbox_configuration_widget(
-                        config['off_label'], config['on_label'], config['toggled'],
-                        test_callback,
+                        setting.untoggled_label, setting.toggled_label, setting.current_state,
+                        setting.on_value_change
                     )
 
                 if widget_layout is not None:
-                    layout.addRow(setting, widget_layout)
+                    layout.addRow(setting.name, widget_layout)
             panel.setLayout(layout)
 
             panel_stack.addWidget(panel)
