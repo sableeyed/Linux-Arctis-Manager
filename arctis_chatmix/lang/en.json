@@ -15,6 +15,7 @@
         "mic_volume": "Volume",
         "mic_side_tone": "Side tone",
         "mic_gain": "Gain",
+        "mic_led_brightness": "LED brightness",
 
         "anc_level": "Level",
 
@@ -28,11 +29,13 @@
         "anc_level_high": "High",
 
         "mic_volume_muted": "Muted",
-        "mic_volume_max": "100%",
         "mic_gain_low": "Low",
         "mic_gain_high": "High",
         "mic_side_tone_none": "None",
         "mic_side_tone_high": "High",
+
+        "off": "off",
+        "perc_100": "100%",
 
         "pm_shutdown_disabled": "Disabled",
         "pm_shutdown_60_minutes": "60 minutes",

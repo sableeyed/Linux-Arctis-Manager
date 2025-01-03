@@ -17,10 +17,28 @@ INACTIVE_TIME_MINUTES = {
     6: 60,
 }
 
+STATUS_REQUEST_MESSAGE = [0x06, 0xb0]
+
 
 class ArctisNovaProWirelessDevice(DeviceManager):
     game_mix: int = None
     chat_mix: int = None
+
+    def get_local_settings(self) -> dict[str, int]:
+        '''
+        Returns the set of settings that are being set during initialization.
+        These settings are not been sent by the device's status messages.
+        '''
+
+        # TODO: save them in ~/.config folder (config manager?)
+        return {
+            'wireless_mode': 0x00,  # speed
+            'mic_volume': 0x0a,  # 100%
+            'mic_side_tone': 0x00,  # off
+            'mic_gain': 0x02,  # high
+            'mic_led_brightness': 0x0a,  # 100%
+            'pm_shutdown': 0x05,  # 30 minutes
+        }
 
     def get_device_name(self):
         return 'Arctis Nova Pro Wireless'
@@ -32,7 +50,7 @@ class ArctisNovaProWirelessDevice(DeviceManager):
         return [self.utility_guess_endpoint(7, 'in')]
 
     def get_request_device_status(self):
-        return self.utility_guess_endpoint(7, 'out'), [0x06, 0xb0]
+        return self.utility_guess_endpoint(7, 'out'), STATUS_REQUEST_MESSAGE
 
     def init_device(self):
         '''
@@ -40,6 +58,8 @@ class ArctisNovaProWirelessDevice(DeviceManager):
         Kinda obscure, but seems to work on my machine (tm).
         (Packets and sequence taken from the Arctis Nova Pro Wireless via Wireshark)
         '''
+
+        local_settings = self.get_local_settings()
 
         commands = [
             # Command, expects response
@@ -60,19 +80,19 @@ class ArctisNovaProWirelessDevice(DeviceManager):
             # Burst of commands (device init?)
             ([0x06, 0x8d, 0x01], False),
             ([0x06, 0x33, 0x14, 0x14, 0x14], False),  # Equalizer with 3 bands
-            ([0x06, 0xc3, 0x00], False),  # 2.4G mode (0x00: speed, 0x01: range)
+            ([0x06, 0xc3, local_settings['wireless_mode']], False),  # 2.4G mode (0x00: speed, 0x01: range)
             ([0x06, 0x2e, 0x00], False),  # Set equalizer preset (0)
-            ([0x06, 0xc1, 0x05], False),  # Set inactive time (to 30 minutes, see INACTIVE_TIME_MINUTES)
+            ([0x06, 0xc1, local_settings['pm_shutdown']], False),  # Set inactive time (to 30 minutes, see INACTIVE_TIME_MINUTES)
             ([0x06, 0x85, 0x0a], False),
-            ([0x06, 0x37, 0x0a], False),  # Mic volume 100% (01 (mute) - a0 (100%))
+            ([0x06, 0x37, local_settings['mic_volume']], False),  # Mic volume 100% (01 (mute) - a0 (100%))
             ([0x06, 0xb2], False),
             ([0x06, 0x47, 0x64, 0x00, 0x64], False),
             ([0x06, 0x83, 0x01], False),
             ([0x06, 0x89, 0x00], False),
-            ([0x06, 0x27, 0x02], False),  # Gain (0x01: low, 0x02: high)
+            ([0x06, 0x27, local_settings['mic_gain']], False),  # Gain (0x01: low, 0x02: high)
             ([0x06, 0xb3, 0x00], False),
-            ([0x06, 0x39, 0x00], False),  # Set the sidetone to 0 (off) -> possible values: 0 (off), 1 (low), 2 (medium), 3 (high)
-            ([0x06, 0xbf, 0x0a], False),  # Set lights to 10 (out of 10)
+            ([0x06, 0x39, local_settings['mic_side_tone']], False),  # Set the sidetone to 0 (off) -> possible values: 0 (off), 1 (low), 2 (medium), 3 (high)
+            ([0x06, 0xbf, local_settings['mic_led_brightness']], False),  # Mute mic led brightness (out of 10)
             ([0x06, 0x43, 0x01], False),
             ([0x06, 0x69, 0x00], False),
             ([0x06, 0x3b, 0x00], False),
@@ -80,24 +100,19 @@ class ArctisNovaProWirelessDevice(DeviceManager):
             ([0x06, 0x49, 0x01], False),
             ([0x06, 0xb7, 0x00], False),
 
-            # ([0x06, 0xc3, 0x01], False),  # 2.4G mode test (range)
-            # ([0x06, 0x09, 0x00], False),  # 2.4G mode test
-
             # Another series of queries (perhaps for confirmation?)
             ([0x06, 0xb7, 0x00], True),
             ([0x06, 0xb7, 0x00], True),
-            ([0x06, 0xb0, 0x00], True),  # Get device status
+            (STATUS_REQUEST_MESSAGE, True),  # Get device status
             ([0x06, 0x20, 0x00], True),
             ([0x06, 0xb7, 0x00], True),
         ]
 
         endpoint, _ = self.get_request_device_status()
-        commands_endpoint_address = self.device[0].interfaces()[endpoint.interface].endpoints()[endpoint.endpoint].bEndpointAddress
         self.kernel_detach(endpoint)
 
         for command in commands:
-            self.device.write(commands_endpoint_address, self.packet_0_filler(command[0], 91))
-            # Ignore the responses for now, as I haven't figured out yet their significance.
+            self.send_06_command(command[0], False)
 
     def manage_input_data(self, data: list[int], endpoint: InterfaceEndpoint) -> ChatMixState:
         volume = 1
@@ -154,24 +169,65 @@ class ArctisNovaProWirelessDevice(DeviceManager):
     def get_configurable_settings(self, state: Optional[DeviceStatus] = None) -> dict[str, list[DeviceSetting]]:
         state = state or DeviceStatus()
 
+        local_settings = self.get_local_settings()
+
         return {
             'microphone': [
-                # TODO add the mic volume value to the status
-                SliderSetting('mic_volume', 'mic_volume_muted', 'mic_volume_max', 0x01, 0x10, 1, 0x10, lambda x: print(x)),
-                # TODO add the mic sidetone value to the status
-                SliderSetting('mic_side_tone', 'mic_side_tone_none', 'mic_side_tone_high', 0x00, 0x03, 1, 0x00, lambda x: print(x)),
-                # TODO add the mic gain value to the status
-                ToggleSetting('mic_gain', 'mic_gain_low', 'mic_gain_high', True, lambda x: print(x)),
+                SliderSetting('mic_volume', 'mic_volume_muted', 'perc_100', 0x01, 0x0a, 1, local_settings['mic_volume'], self.on_mic_volume_change),
+                SliderSetting('mic_side_tone', 'mic_side_tone_none', 'mic_side_tone_high', 0x00,
+                              0x03, 1, local_settings['mic_side_tone'], self.on_mic_side_tone_change),
+                SliderSetting('mic_led_brightness', 'off', 'perc_100', 0x01, 0x0a, 1, local_settings['mic_led_brightness'], self.on_mic_led_brightness_change),
+                ToggleSetting('mic_gain', 'mic_gain_high', 'mic_gain_low', local_settings['mic_gain'] == 0x01, self.on_mic_gain_change),
             ],
             'anc': [
                 SliderSetting('anc_level', 'anc_level_low', 'anc_level_high', 0x00, 0x03, 1,
-                              state.transparent_noise_cancelling_level.value or 0x00, lambda x: print(x)),
+                              state.transparent_noise_cancelling_level.value or 0x00, self.on_anc_level_change),
             ],
             'power_management': [
                 SliderSetting('pm_shutdown', 'pm_shutdown_disabled', 'pm_shutdown_60_minutes',
-                              0x00, 0x06, 1, state.auto_off_time_minutes.value or 0x04, lambda x: print(x)),
+                              0x00, 0x06, 1, state.auto_off_time_minutes.value or local_settings['pm_shutdown'], self.on_pm_shutdown_change),
             ],
             'wireless': [
-                ToggleSetting('wireless_mode', 'wireless_mode_speed', 'wireless_mode_range', state.wireless_mode.value == 0x00, lambda x: print(x)),
+                ToggleSetting('wireless_mode', 'wireless_mode_range', 'wireless_mode_speed', state.wireless_mode.value == 0x01, self.on_wireless_mode_change),
             ],
         }
+
+    def on_mic_volume_change(self, value: int):
+        self.send_06_command([0x06, 0x37, value])
+        self.send_06_command([0x06, 0x09, 0x00])
+
+    def on_mic_side_tone_change(self, value: int):
+        self.send_06_command([0x06, 0x39, value])
+        self.send_06_command([0x06, 0x09, 0x00])
+
+    def on_mic_led_brightness_change(self, value: int):
+        self.send_06_command([0x06, 0xbf, value])
+        self.send_06_command([0x06, 0x09, 0x00])
+
+    def on_mic_gain_change(self, value: bool):
+        self.send_06_command([0x06, 0x27, 0x02 if value else 0x01])
+        self.send_06_command([0x06, 0x09, 0x00])
+
+    def on_anc_level_change(self, value: int):
+        # TODO: implement ANC level change
+        print(f'ANC level: {value}')
+
+    def on_pm_shutdown_change(self, value: int):
+        self.send_06_command([0x06, 0xc1, value])
+        self.send_06_command([0x06, 0x09, 0x00])
+
+        self.send_06_command(STATUS_REQUEST_MESSAGE)
+
+    def on_wireless_mode_change(self, value: bool):
+        self.send_06_command([0x06, 0xc3, 0x01 if value else 0x00])
+        self.send_06_command([0x06, 0x09, 0x00])
+
+        self.send_06_command(STATUS_REQUEST_MESSAGE)
+
+    def send_06_command(self, command: list[int], kernel_detach: bool = False) -> None:
+        endpoint, _ = self.get_request_device_status()
+        commands_endpoint_address = self.device[0].interfaces()[endpoint.interface].endpoints()[endpoint.endpoint].bEndpointAddress
+        if kernel_detach:
+            self.kernel_detach(endpoint)
+
+        self.device.write(commands_endpoint_address, self.packet_0_filler(command, 91))
