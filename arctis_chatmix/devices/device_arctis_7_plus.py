@@ -5,7 +5,7 @@ BATTERY_MIN = 0x00
 BATTERY_MAX = 0x04
 
 
-class ArctisNovaProWirelessDevice(DeviceManager):
+class Arctis7PlusDevice(DeviceManager):
     def get_device_product_id(self) -> int:
         return 0x220e
 

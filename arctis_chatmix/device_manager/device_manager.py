@@ -14,6 +14,22 @@ from arctis_chatmix.device_manager.device_status import DeviceStatus
 from arctis_chatmix.device_manager.interface_endpoint import InterfaceEndpoint
 
 
+def device_manager_factory(product_id: int, device_name: str) -> 'DeviceManager':
+    def device_manager_decorator(cls):
+        def get_product_id(self) -> int:
+            return product_id
+
+        def get_device_name(self) -> str:
+            return device_name
+
+        cls.get_device_product_id = get_product_id
+        cls.get_device_name = get_device_name
+
+        return cls
+
+    return device_manager_decorator
+
+
 class DeviceManager(ABC):
     device: usb.core.Device
     log: logging.Logger
