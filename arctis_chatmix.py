@@ -37,7 +37,7 @@ if __name__ == '__main__':
     args.add_argument('-v', '--verbose', action='count', default=0)
     args = args.parse_args()
 
-    logging.basicConfig(level=logging.CRITICAL, format='%(name)10s %(levelname)8s | %(message)s')
+    logging.basicConfig(level=logging.CRITICAL, format='%(name)20s %(levelname)8s | %(message)s')
 
     # Initialize the QApplication here due to the asyncio loop (the app needs to run in the main thread)
     app = QApplication(sys.argv)
