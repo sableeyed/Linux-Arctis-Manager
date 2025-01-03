@@ -179,10 +179,6 @@ class ArctisNovaProWirelessDevice(DeviceManager):
                 SliderSetting('mic_led_brightness', 'off', 'perc_100', 0x01, 0x0a, 1, local_settings['mic_led_brightness'], self.on_mic_led_brightness_change),
                 ToggleSetting('mic_gain', 'mic_gain_high', 'mic_gain_low', local_settings['mic_gain'] == 0x01, self.on_mic_gain_change),
             ],
-            'anc': [
-                SliderSetting('anc_level', 'anc_level_low', 'anc_level_high', 0x00, 0x03, 1,
-                              state.transparent_noise_cancelling_level.value or 0x00, self.on_anc_level_change),
-            ],
             'power_management': [
                 SliderSetting('pm_shutdown', 'pm_shutdown_disabled', 'pm_shutdown_60_minutes',
                               0x00, 0x06, 1, state.auto_off_time_minutes.value or local_settings['pm_shutdown'], self.on_pm_shutdown_change),
@@ -207,10 +203,6 @@ class ArctisNovaProWirelessDevice(DeviceManager):
     def on_mic_gain_change(self, value: bool):
         self.send_06_command([0x06, 0x27, 0x02 if value else 0x01])
         self.send_06_command([0x06, 0x09, 0x00])
-
-    def on_anc_level_change(self, value: int):
-        # TODO: implement ANC level change
-        print(f'ANC level: {value}')
 
     def on_pm_shutdown_change(self, value: int):
         self.send_06_command([0x06, 0xc1, value])

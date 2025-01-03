@@ -5,7 +5,6 @@
     },
     
     "sections": {
-        "anc": "ANC",
         "microphone": "Microphone",
         "power_management": "Power management",
         "wireless": "Wireless"
@@ -17,17 +16,12 @@
         "mic_gain": "Gain",
         "mic_led_brightness": "LED brightness",
 
-        "anc_level": "Level",
-
         "wireless_mode":"Wireless mode",
 
         "pm_shutdown": "Shutdown after"
     },
 
     "setting_values": {
-        "anc_level_low": "Low",
-        "anc_level_high": "High",
-
         "mic_volume_muted": "Muted",
         "mic_gain_low": "Low",
         "mic_gain_high": "High",
