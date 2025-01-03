@@ -1,4 +1,3 @@
-import json
 import locale
 import logging
 import xml.etree.ElementTree as ET
@@ -88,37 +87,40 @@ class SystrayApp:
         self.log.debug('Received shutdown signal, shutting down.')
         self.app.quit()
 
-    def get_config_status_sections(self, status: DeviceStatus) -> dict[str, dict]:
-        i18n = Translations.get_instance()
-
+    def get_config_status_sections(self, status: DeviceStatus) -> list[dict]:
         def str_or_none(v):
             return str(v) if v is not None else None
 
-        return {
-            'battery': {
+        return [
+            # Battery
+            {
                 'headset_power_status': {'format': {'status': str_or_none(status.headset_power_status)}},
                 'headset_battery_charge': {'format': {'status': str_or_none(status.headset_battery_charge * 100)}},
                 'charge_slot_battery_charge': {'format': {'status': str_or_none(status.charge_slot_battery_charge * 100)}},
             },
-            'microphone': {
+            # Microphone
+            {
                 'mic_status': {'format': {'status': str_or_none(status.mic_status)}},
                 'mic_led_brightness': {'format': {'status': str_or_none(status.mic_led_brightness * 100)}},
             },
-            'anc': {
+            # Noise cancelling
+            {
                 'noise_cancelling': {'format': {'status': str_or_none(status.noise_cancelling)}},
                 'transparent_noise_cancelling_level': {'format': {'status': str_or_none(status.transparent_noise_cancelling_level * 100)}},
             },
-            'wireless_mode': {
+            # Wireless mode
+            {
                 'wireless_pairing': {'format': {'status': str_or_none(status.wireless_pairing)}},
                 'wireless_mode': {'format': {'mode': str_or_none(status.wireless_mode)}},
             },
-            'bluetooth': {
+            # Bluetooth
+            {
                 'bluetooth_powerup_state': {'format': {'status': str_or_none(status.bluetooth_powerup_state)}},
                 'bluetooth_power_status': {'format': {'status': str_or_none(status.bluetooth_power_status)}},
                 'bluetooth_auto_mute': {'format': {'status': str_or_none(status.bluetooth_auto_mute)}},
                 'bluetooth_connection': {'format': {'status': str_or_none(status.bluetooth_connection)}},
             }
-        }
+        ]
 
     def on_device_status_update(self, device_manager: DeviceManager, status: DeviceStatus) -> None:
         if device_manager is None or status is None:
@@ -126,7 +128,7 @@ class SystrayApp:
 
         has_previous_section = False
 
-        for section in self.get_config_status_sections(status).values():
+        for section in self.get_config_status_sections(status):
             if not any((val for key, val in section.items() if getattr(status, key) is not None)):
                 continue
 
@@ -148,7 +150,7 @@ class SystrayApp:
         self._device_manager = device_manager
         self._device_status = status
 
-        if len(device_manager.get_configurable_settings().keys()) > 0 and not '_settings' in self.menu_entries:
+        if len(device_manager.get_configurable_settings(self._device_status).keys()) > 0 and not '_settings' in self.menu_entries:
             self.menu_entries['_settings'] = QAction(Translations.get_instance().get_translation('app.settings_label'))
             self.menu_entries['_settings'].triggered.connect(self.open_settings_window)
             self.menu.addAction(self.menu_entries['_settings'])

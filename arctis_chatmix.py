@@ -4,6 +4,8 @@ import signal
 import sys
 from typing import Literal
 
+from arctis_chatmix.translations import Translations
+
 # Setup the notify logging
 NOTIFY = 19  # Right before "INFO"
 notify_enabled = os.system('which notify-send 1>/dev/null 2>&1') == 0
@@ -43,10 +45,14 @@ if __name__ == '__main__':
     log_level = logging.DEBUG if args.verbose else NOTIFY
     daemon = ArctisChatMixDaemon(log_level=log_level)
     systray_app = SystrayApp(app=app, log_level=log_level)
+    # Init the translations with the logging level
+    i18n = Translations.get_instance(log_level=log_level)
 
     def sigterm_handler(sig=None, frame=None):
         daemon.stop()
         systray_app.stop()
+
+        i18n.debug_hit_cache()
 
     signal.signal(signal.SIGINT, sigterm_handler)
     signal.signal(signal.SIGTERM, sigterm_handler)

@@ -125,7 +125,7 @@ class ArctisNovaProWirelessDevice(DeviceManager):
                     charge_slot_battery_charge=DeviceStatusValue(data[7], mapped_val=lambda x: round(x / 8, 2)),
                     transparent_noise_cancelling_level=DeviceStatusValue(data[8], mapped_val=lambda x: round(x / 10, 0)),
                     mic_status=DeviceStatusValue(data[9], 'mic_status.unmuted' if data[9] == 0x00 else 'mic_status.muted'),
-                    noise_cancelling=DeviceStatusValue(data[10], 'off' if data[10] == 0x00 else 'transparent' if data[10] == 0x01 else 'on'),
+                    noise_cancelling=DeviceStatusValue(data[10], 'on_off.off' if data[10] == 0x00 else 'anc.transparent' if data[10] == 0x01 else 'on_off.on'),
                     mic_led_brightness=DeviceStatusValue(data[11], mapped_val=lambda x: x / 10),
                     auto_off_time_minutes=DeviceStatusValue(data[12], mapped_val=lambda x: INACTIVE_TIME_MINUTES[x]),
                     wireless_mode=DeviceStatusValue(data[13], 'wireless_mode.speed' if data[13] == 0x00 else 'wireless_mode.range'),
@@ -152,21 +152,26 @@ class ArctisNovaProWirelessDevice(DeviceManager):
         return [*packet, *[0 for _ in range(size - len(packet))]]
 
     def get_configurable_settings(self, state: Optional[DeviceStatus] = None) -> dict[str, list[DeviceSetting]]:
-        # TODO: depend on state for default values
+        state = state or DeviceStatus()
 
         return {
             'microphone': [
+                # TODO add the mic volume value to the status
                 SliderSetting('mic_volume', 'mic_volume_muted', 'mic_volume_max', 0x01, 0x10, 1, 0x10, lambda x: print(x)),
+                # TODO add the mic sidetone value to the status
                 SliderSetting('mic_side_tone', 'mic_side_tone_none', 'mic_side_tone_high', 0x00, 0x03, 1, 0x00, lambda x: print(x)),
+                # TODO add the mic gain value to the status
                 ToggleSetting('mic_gain', 'mic_gain_low', 'mic_gain_high', True, lambda x: print(x)),
             ],
             'anc': [
-                SliderSetting('anc_level', 'anc_level_low', 'anc_level_high', 0x00, 0x03, 1, 0x00, lambda x: print(x)),
+                SliderSetting('anc_level', 'anc_level_low', 'anc_level_high', 0x00, 0x03, 1,
+                              state.transparent_noise_cancelling_level.value or 0x00, lambda x: print(x)),
             ],
             'power_management': [
-                SliderSetting('pm_shutdown', 'pm_shutdown_disabled', 'pm_shutdown_60_minutes', 0x00, 0x06, 1, 0x04, lambda x: print(x)),
+                SliderSetting('pm_shutdown', 'pm_shutdown_disabled', 'pm_shutdown_60_minutes',
+                              0x00, 0x06, 1, state.auto_off_time_minutes.value or 0x04, lambda x: print(x)),
             ],
             'wireless': [
-                ToggleSetting('wireless_mode', 'wireless_mode_speed', 'wireless_mode_range', False, lambda x: print(x)),
+                ToggleSetting('wireless_mode', 'wireless_mode_speed', 'wireless_mode_range', state.wireless_mode.value == 0x00, lambda x: print(x)),
             ],
         }

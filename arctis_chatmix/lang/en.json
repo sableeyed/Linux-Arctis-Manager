@@ -6,16 +6,12 @@
     
     "sections": {
         "anc": "ANC",
-        "battery": "Battery",
-        "bluetooth": "Bluetooth",
         "microphone": "Microphone",
         "power_management": "Power management",
         "wireless": "Wireless"
     },
 
     "settings": {
-        "headset_power_status": "Headset power status",
-
         "mic_volume": "Volume",
         "mic_side_tone": "Side tone",
         "mic_gain": "Gain",
@@ -26,6 +22,7 @@
 
         "pm_shutdown": "Shutdown after"
     },
+
     "setting_values": {
         "anc_level_low": "Low",
         "anc_level_high": "High",
@@ -45,6 +42,7 @@
     },
 
     "device_status_values": {
+        "anc": { "transparent": "transparent" },
         "connection": {
             "connected": "connected", "disconnected": "disconnected",
             "online": "online", "offline": "offline",
@@ -77,11 +75,6 @@
         "bluetooth_powerup_state": "Bluetooth turned on: {status}",
         "bluetooth_power_status": "Bluetooth status: {status}",
         "bluetooth_auto_mute": "Bluetooth mute: {status}",
-        "bluetooth_connection": "Bluetooth connection: {status}",
-
-        "on_off_state": {
-            "on": "on",
-            "off": "off"
-        }
+        "bluetooth_connection": "Bluetooth connection: {status}"
     }
 }

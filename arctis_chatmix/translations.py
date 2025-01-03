@@ -1,19 +1,23 @@
 import json
 import locale
+import logging
 from pathlib import Path
-from typing import Optional
 
 
 class Translations:
     translations: dict
+    log: logging.Logger
 
     @staticmethod
-    def get_instance():
+    def get_instance(log_level: int = logging.INFO):
         if not hasattr(Translations, '_instance'):
-            Translations._instance = Translations()
+            Translations._instance = Translations(log_level)
         return Translations._instance
 
-    def __init__(self):
+    def __init__(self, log_level: int):
+        self.log = logging.getLogger(__class__.__name__)
+        self.log.setLevel(log_level)
+
         lang_code, _ = locale.getdefaultlocale()
         lang_code = lang_code.split('_')[0]
 
@@ -33,13 +37,20 @@ class Translations:
         keys = key.split('.')
         node = self.translations
 
-        for key in keys:
-            if node.get(key, None) is None:
+        for sub_key in keys:
+            if node.get(sub_key, None) is None:
                 self._cache[key] = node
+                self.log.warning(f'Missing translation for key: {key}')
 
-                return key
-            node = node[key]
+                return self._cache[key]
+            node = node[sub_key]
 
         self._cache[key] = node
 
         return self._cache[key]
+
+    def debug_hit_cache(self):
+        keys = list(self._cache.keys())
+        keys.sort()
+
+        self.log.debug(f'Hit keys:\n{'\n'.join(keys)}')
