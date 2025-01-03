@@ -20,7 +20,7 @@ class SettingsWindow(QMainWindow):
 
         i18n = Translations.get_instance()
 
-        self.setWindowTitle(i18n.get_translation('app', 'settings_window_title'))
+        self.setWindowTitle(i18n.get_translation('app.settings_window_title'))
         # Note: Wayland does not support window icons (yet?)
         self.setWindowIcon(QIcon(get_icon_pixmap()))
 

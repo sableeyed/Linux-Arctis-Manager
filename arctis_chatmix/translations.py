@@ -1,6 +1,7 @@
 import json
 import locale
 from pathlib import Path
+from typing import Optional
 
 
 class Translations:
@@ -22,13 +23,23 @@ class Translations:
 
         self.translations = json.load(translation_json_path.open('r'))
 
-    def get_translation(self, dot_notation_key: str, to_translate: str) -> str:
-        keys = dot_notation_key.split('.')
+        self._cache = {}
+
+    def get_translation(self, dot_notation_key: str, *additional_key_parts: list[str]) -> str:
+        key = '.'.join([key for key in [dot_notation_key, *additional_key_parts] if key is not None])
+        if key in self._cache:
+            return self._cache[key]
+
+        keys = key.split('.')
         node = self.translations
 
         for key in keys:
             if node.get(key, None) is None:
-                return to_translate
+                self._cache[key] = node
+
+                return key
             node = node[key]
 
-        return node[to_translate] if to_translate in node else node
+        self._cache[key] = node
+
+        return self._cache[key]

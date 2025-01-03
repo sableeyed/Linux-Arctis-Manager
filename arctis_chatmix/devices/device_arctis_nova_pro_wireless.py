@@ -1,10 +1,11 @@
-from typing import Literal, Optional
+from typing import Optional
 
 from arctis_chatmix.device_manager import (ChatMixState, DeviceManager,
                                            DeviceStatus, InterfaceEndpoint)
 from arctis_chatmix.device_manager.device_settings import (DeviceSetting,
                                                            SliderSetting,
                                                            ToggleSetting)
+from arctis_chatmix.device_manager.device_status import DeviceStatusValue
 
 INACTIVE_TIME_MINUTES = {
     0: 0,
@@ -15,31 +16,6 @@ INACTIVE_TIME_MINUTES = {
     5: 30,
     6: 60,
 }
-
-
-class ArctisNovaProWirelessDeviceStatus(DeviceStatus):
-    def validation_dict(self) -> dict[str, list[str] | dict[Literal['between'], list[int]] | dict[Literal['gt', 'lt'], int | float] | Literal['any', 'any_str', 'any_int', 'any_float']]:
-        return {
-            'bluetooth_powerup_state': ['on', 'off'],
-            'bluetooth_auto_mute': ['on', 'off', '-12db'],
-            'bluetooth_power_status': ['on', 'off'],
-            'bluetooth_connection': ['on', 'off'],
-
-            'wireless_mode': ['speed', 'range'],
-            'wireless_pairing': ['not_paired', 'paired_offline', 'connected'],
-
-            'headset_battery_charge': {'between': [0, 1]},
-            'charge_slot_battery_charge': {'between': [0, 1]},
-            'headset_power_status': ['offline', 'cable_charging', 'online'],
-
-            'transparent_noise_cancelling_level': {'between': [0, 1]},
-            'noise_cancelling': ['on', 'transparent', 'off'],
-
-            'mic_status': ['muted', 'unmuted'],
-            'mic_led_brightness': {'between': [0, 1]},
-
-            'auto_off_time_minutes': {'gte': 0},
-        }
 
 
 class ArctisNovaProWirelessDevice(DeviceManager):
@@ -139,21 +115,24 @@ class ArctisNovaProWirelessDevice(DeviceManager):
                 self.chat_mix = data[3] / 100  # Ranges from 0 to 100
             elif len(data) >= 16 and data[0] == 0x06 and data[1] == 0xb0:
                 # https://github.com/Sapd/HeadsetControl/blob/master/src/devices/steelseries_arctis_nova_pro_wireless.c#L242
-                device_status = ArctisNovaProWirelessDeviceStatus(
-                    bluetooth_powerup_state='off' if data[2] == 0x00 else 'on',
-                    bluetooth_auto_mute='off' if data[3] == 0x00 else '-12db' if data[3] == 0x01 else 'on',
-                    bluetooth_power_status='off' if data[4] == 0x01 else 'on',
-                    bluetooth_connection='off' if data[5] == 0x00 else 'connected' if data[5] == 0x01 else 'disconnected',
-                    headset_battery_charge=float(round(data[6] / 8, 2)),
-                    charge_slot_battery_charge=float(round(data[7] / 8, 2)),
-                    transparent_noise_cancelling_level=data[8] / 10,
-                    mic_status='unmuted' if data[9] == 0x00 else 'muted',
-                    noise_cancelling='off' if data[10] == 0x00 else 'transparent' if data[10] == 0x01 else 'on',
-                    mic_led_brightness=data[11] / 10,
-                    auto_off_time_minutes=INACTIVE_TIME_MINUTES[data[12]],
-                    wireless_mode='speed' if data[13] == 0x00 else 'range',
-                    wireless_pairing='not_paired' if data[14] == 0x01 else 'paired_offline' if data[13] == 0x04 else 'connected',
-                    headset_power_status='offline' if data[15] == 0x01 else 'cable_charging' if data[14] == 0x02 else 'online',
+                device_status = DeviceStatus(
+                    bluetooth_powerup_state=DeviceStatusValue(data[2], 'on_off.off' if data[2] == 0x00 else 'on_off.on'),
+                    bluetooth_auto_mute=DeviceStatusValue(data[3], 'on_off.off' if data[3] == 0x00 else 'db.-12db' if data[3] == 0x01 else 'on_off.on'),
+                    bluetooth_power_status=DeviceStatusValue(data[4], 'on_off.off' if data[4] == 0x01 else 'on_off.on'),
+                    bluetooth_connection=DeviceStatusValue(data[5], 'on_off.off' if data[5] ==
+                                                           0x00 else 'connection.connected' if data[5] == 0x01 else 'connection.disconnected'),
+                    headset_battery_charge=DeviceStatusValue(data[6], mapped_val=lambda x: round(x / 8, 2)),
+                    charge_slot_battery_charge=DeviceStatusValue(data[7], mapped_val=lambda x: round(x / 8, 2)),
+                    transparent_noise_cancelling_level=DeviceStatusValue(data[8], mapped_val=lambda x: round(x / 10, 0)),
+                    mic_status=DeviceStatusValue(data[9], 'mic_status.unmuted' if data[9] == 0x00 else 'mic_status.muted'),
+                    noise_cancelling=DeviceStatusValue(data[10], 'off' if data[10] == 0x00 else 'transparent' if data[10] == 0x01 else 'on'),
+                    mic_led_brightness=DeviceStatusValue(data[11], mapped_val=lambda x: x / 10),
+                    auto_off_time_minutes=DeviceStatusValue(data[12], mapped_val=lambda x: INACTIVE_TIME_MINUTES[x]),
+                    wireless_mode=DeviceStatusValue(data[13], 'wireless_mode.speed' if data[13] == 0x00 else 'wireless_mode.range'),
+                    wireless_pairing=DeviceStatusValue(data[14], 'pairing.not_paired' if data[14] ==
+                                                       0x01 else 'pairing.paired_offline' if data[13] == 0x04 else 'connection.connected'),
+                    headset_power_status=DeviceStatusValue(data[15], 'connection.offline' if data[15] ==
+                                                           0x01 else 'connection.cable_charging' if data[14] == 0x02 else 'connection.online'),
                 )
             else:
                 self.log.debug(f'Incoming data from {endpoint.interface}, {endpoint.endpoint}: [{':'.join(hex(x)[2:] for x in data)}]')

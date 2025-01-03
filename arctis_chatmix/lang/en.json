@@ -3,6 +3,7 @@
         "settings_label": "Settings",
         "settings_window_title": "Arctis ChatMix settings"
     },
+    
     "sections": {
         "anc": "ANC",
         "battery": "Battery",
@@ -43,56 +44,40 @@
         "wireless_mode_range": "Range"
     },
 
+    "device_status_values": {
+        "connection": {
+            "connected": "connected", "disconnected": "disconnected",
+            "online": "online", "offline": "offline",
+            "cable_charging": "charging (cable)"
+        },
+        "db": { "-12db": "-12db" },
+        "mic_status": { "muted": "muted", "unmuted": "unmuted" },
+        "on_off": { "on": "on", "off": "off" },
+        "pairing": {"paired": "paired", "not_paired": "not paired", "paired_offline": "paired (offline)"},
+        "wireless_mode": { "range": "range", "speed": "speed" }
+    },
+
     "menu": {
-        "headset_power_status_label": "Headset power status: {status}",
-        "headset_power_status_status": {
-            "offline": "offline",
-            "cable_charging": "charging (cable)",
-            "online": "online"
-        },
+        "headset_power_status": "Headset power status: {status}",
 
-        "headset_battery_charge_label": "Battery status: {status}%",
-        "charge_slot_battery_charge_label": "Charge slot battery status: {status}%",
+        "headset_battery_charge": "Battery status: {status}%",
+        "charge_slot_battery_charge": "Charge slot battery status: {status}%",
 
-        "wireless_pairing_label": "Wireless: {status}",
-        "wireless_pairing_status": {
-            "not_paired": "not paired",
-            "paired_offline": "paired (offline)",
-            "connected": "connected"
-        },
+        "wireless_pairing": "Wireless: {status}",
 
-        "wireless_mode_label": "Wireless mode: {mode}",
-        "wireless_mode_status": {
-            "speed": "speed",
-            "range": "range"
-        },
+        "wireless_mode": "Wireless mode: {mode}",
 
-        "transparent_noise_cancelling_level_label": "Transparent noise cancelling level: {status}%",
-        "noise_cancelling_label": "Noise cancelling: {status}",
-        "noise_cancelling_status": {
-            "on": "on",
-            "transparent": "transparent",
-            "off": "off"
-        },
+        "transparent_noise_cancelling_level": "Transparent noise cancelling level: {status}%",
+        "noise_cancelling": "Noise cancelling: {status}",
 
-        "mic_status_label": "Mic status: {status}",
-        "mic_status_status": {
-            "muted": "muted",
-            "unmuted": "unmuted"
-        },
+        "mic_status": "Mic status: {status}",
 
-        "mic_led_brightness_label": "Mic LED brightness: {status}%",
+        "mic_led_brightness": "Mic LED brightness: {status}%",
 
-        "bluetooth_powerup_state_label": "Bluetooth turned on: {status}",
-        "bluetooth_power_status_label": "Bluetooth status: {status}",
-        "bluetooth_auto_mute_label": "Bluetooth mute: {status}",
-        "bluetooth_connection_label": "Bluetooth connection: {status}",
-
-        "bluetooth_auto_mute_status": {
-            "on": "on",
-            "off": "off",
-            "half": "half"
-        },
+        "bluetooth_powerup_state": "Bluetooth turned on: {status}",
+        "bluetooth_power_status": "Bluetooth status: {status}",
+        "bluetooth_auto_mute": "Bluetooth mute: {status}",
+        "bluetooth_connection": "Bluetooth connection: {status}",
 
         "on_off_state": {
             "on": "on",
