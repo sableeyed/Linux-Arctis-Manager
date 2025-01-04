@@ -51,7 +51,7 @@ The following subsystems will be installed:
 ### System tray application
 ![System tray application](static/system_tray_app.png)
 
-### Settings window
+### Settings window (in the example: Arctis Nova Pro Wireless)
 ![Settings window](static/settings_window.png)
 
 
