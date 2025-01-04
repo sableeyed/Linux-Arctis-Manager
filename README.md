@@ -25,12 +25,13 @@ The application then listens to the headset's USB dongle signals and interprets 
 
 The software is based on the following prerequisites:
 
-- Python 3.x
-- Locally installable (via `pip install --user`) Python modules (prompt will ask if you want to install them locally):
-  - [PyUSB](https://pyusb.github.io/pyusb/) - USB communication library
-  - [qasync](https://github.com/CabbageDevelopment/qasync) - seamless async integration with Qt applications
-- Globally (via package manager) or locally (via `pip install --user`) installable Python modules (prompt will ask accordingly)
-  - [PyQt6](https://www.riverbankcomputing.com/software/pyqt/) (suggested: globally due to its size) - Qt6 bindings for UI parts
+- Python 3.9+
+- Python modules (they will be installed automatically by the `install.sh` script)
+  - Locally installable (via `pip install --user`) Python modules (prompt will ask if you want to install them locally):
+    - [PyUSB](https://pyusb.github.io/pyusb/) - USB communication library
+    - [qasync](https://github.com/CabbageDevelopment/qasync) - seamless async integration with Qt applications
+  - Globally (via package manager) or locally (via `pip install --user`) installable Python modules (prompt will ask accordingly)
+    - [PyQt6](https://www.riverbankcomputing.com/software/pyqt/) (suggested: globally due to its size) - Qt6 bindings for UI parts
 - PulseAudio (very common in modern Linux distributions)
 
 **Note**
