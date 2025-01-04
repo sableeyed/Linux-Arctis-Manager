@@ -183,7 +183,7 @@ class ArctisNovaProWirelessDevice(DeviceManager):
                               0x03, 1, local_settings['mic_side_tone'], self.on_mic_side_tone_change),
                 SliderSetting('mic_led_brightness', 'perc_10', 'perc_100', 0x01, 0x0a, 1,
                               local_settings['mic_led_brightness'], self.on_mic_led_brightness_change),
-                ToggleSetting('mic_gain', 'mic_gain_high', 'mic_gain_low', local_settings['mic_gain'] == 0x01, self.on_mic_gain_change),
+                ToggleSetting('mic_gain', 'mic_gain_low', 'mic_gain_high', local_settings['mic_gain'] == 0x01, self.on_mic_gain_change),
             ],
             'power_management': [
                 SliderSetting('pm_shutdown', 'pm_shutdown_disabled', 'pm_shutdown_60_minutes',
