@@ -46,6 +46,15 @@ The following subsystems will be installed:
 - user space's systemd service, which starts up at device plugin (or user's login) and shuts down at device plug-out (or user's log off).
 - the Python application, including the service which communicates to the device, and a system tray icon which will display all the available information. If any setting is configurable software-side, the system tray app will show the relative action to open the settings menu.
 
+## Screenshots
+
+### System tray application
+![System tray application](static/system_tray_app.png)
+
+### Settings window
+![Settings window](static/settings_window.png)
+
+
 **Note**: your device should automatically be configured after installation. If not, please unplug and plug the device again.
 
 ## Supported devices
@@ -71,7 +80,7 @@ If your work does the job, consider forking the repository and open a pull reque
 
 Important notes:
 
-- when working on the repository and running the application for debugging, remember to stop the service via `sysetmctl --user disable --now arctis-pcm.service`. Once finished, you can enable it again via `sysetmctl --user enable arctis-pcm.service`.
+- when working on the repository and running the application for debugging, remember to stop the service via `systemctl --user disable --now arctis-pcm.service`. Once finished, you can enable it again via `sysetmctl --user enable arctis-pcm.service`.
 - if working with vscode, a launch setup is ready to use (`arctis_chatmix debug`) which will run the software with debug logging
 - remember to refresh your installation once finished (see installation section)
 
