@@ -32,7 +32,7 @@ The software is based on the following prerequisites:
     - [qasync](https://github.com/CabbageDevelopment/qasync) - seamless async integration with Qt applications
   - Globally (via package manager) or locally (via `pip install --user`) installable Python modules (prompt will ask accordingly)
     - [PyQt6](https://www.riverbankcomputing.com/software/pyqt/) (suggested: globally due to its size) - Qt6 bindings for UI parts
-- PulseAudio (very common in modern Linux distributions)
+- PulseAudio (very common in modern Linux distributions), including the `pactl` command line (perhaps not installed by default, possibly the `pulseaudio-utils` system package)
 
 **Note**
 Do not install any python module globally, never (i.e. using `sudo pip install ...`), it might break your linux distribution!
