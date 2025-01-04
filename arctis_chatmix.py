@@ -64,7 +64,7 @@ if __name__ == '__main__':
     asyncio.set_event_loop(event_loop)
 
     asyncio.ensure_future(systray_app.start())
-    asyncio.ensure_future(daemon.start('1.4-dev'))
+    asyncio.ensure_future(daemon.start('1.4'))
 
     with event_loop:
         event_loop.run_forever()

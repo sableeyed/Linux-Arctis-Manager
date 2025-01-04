@@ -1,5 +1,6 @@
 from typing import Optional
 
+from arctis_chatmix.config_manager import ConfigManager
 from arctis_chatmix.device_manager import (ChatMixState, DeviceManager,
                                            DeviceStatus, InterfaceEndpoint)
 from arctis_chatmix.device_manager.device_settings import (DeviceSetting,
@@ -30,8 +31,7 @@ class ArctisNovaProWirelessDevice(DeviceManager):
         These settings are not been sent by the device's status messages.
         '''
 
-        # TODO: save them in ~/.config folder (config manager?)
-        return {
+        self._local_config = ConfigManager.get_instance().get_config(self.get_device_vendor_id(), self.get_device_product_id()) or {
             'wireless_mode': 0x00,  # speed
             'mic_volume': 0x0a,  # 100%
             'mic_side_tone': 0x00,  # off
@@ -39,6 +39,11 @@ class ArctisNovaProWirelessDevice(DeviceManager):
             'mic_led_brightness': 0x0a,  # 100%
             'pm_shutdown': 0x05,  # 30 minutes
         }
+
+        return self._local_config
+
+    def save_local_settings(self) -> None:
+        ConfigManager.get_instance().save_config(self.get_device_vendor_id(), self.get_device_product_id(), self._local_config)
 
     def get_device_name(self):
         return 'Arctis Nova Pro Wireless'
@@ -176,7 +181,8 @@ class ArctisNovaProWirelessDevice(DeviceManager):
                 SliderSetting('mic_volume', 'mic_volume_muted', 'perc_100', 0x01, 0x0a, 1, local_settings['mic_volume'], self.on_mic_volume_change),
                 SliderSetting('mic_side_tone', 'mic_side_tone_none', 'mic_side_tone_high', 0x00,
                               0x03, 1, local_settings['mic_side_tone'], self.on_mic_side_tone_change),
-                SliderSetting('mic_led_brightness', 'off', 'perc_100', 0x01, 0x0a, 1, local_settings['mic_led_brightness'], self.on_mic_led_brightness_change),
+                SliderSetting('mic_led_brightness', 'perc_10', 'perc_100', 0x01, 0x0a, 1,
+                              local_settings['mic_led_brightness'], self.on_mic_led_brightness_change),
                 ToggleSetting('mic_gain', 'mic_gain_high', 'mic_gain_low', local_settings['mic_gain'] == 0x01, self.on_mic_gain_change),
             ],
             'power_management': [
@@ -192,27 +198,49 @@ class ArctisNovaProWirelessDevice(DeviceManager):
         self.send_06_command([0x06, 0x37, value])
         self.send_06_command([0x06, 0x09, 0x00])
 
+        self._local_config['mic_volume'] = value
+        self.save_local_settings()
+
     def on_mic_side_tone_change(self, value: int):
         self.send_06_command([0x06, 0x39, value])
         self.send_06_command([0x06, 0x09, 0x00])
+
+        self._local_config['mic_side_tone'] = value
+        self.save_local_settings()
 
     def on_mic_led_brightness_change(self, value: int):
         self.send_06_command([0x06, 0xbf, value])
         self.send_06_command([0x06, 0x09, 0x00])
 
+        self._local_config['mic_led_brightness'] = value
+        self.save_local_settings()
+
     def on_mic_gain_change(self, value: bool):
-        self.send_06_command([0x06, 0x27, 0x02 if value else 0x01])
+        value = 0x02 if value else 0x01
+
+        self.send_06_command([0x06, 0x27, value])
         self.send_06_command([0x06, 0x09, 0x00])
+
+        self._local_config['mic_gain'] = value
+        self.save_local_settings()
 
     def on_pm_shutdown_change(self, value: int):
         self.send_06_command([0x06, 0xc1, value])
         self.send_06_command([0x06, 0x09, 0x00])
 
+        self._local_config['pm_shutdown'] = value
+        self.save_local_settings()
+
         self.send_06_command(STATUS_REQUEST_MESSAGE)
 
     def on_wireless_mode_change(self, value: bool):
-        self.send_06_command([0x06, 0xc3, 0x01 if value else 0x00])
+        value = 0x01 if value else 0x00
+
+        self.send_06_command([0x06, 0xc3, value])
         self.send_06_command([0x06, 0x09, 0x00])
+
+        self._local_config['wireless_mode'] = value
+        self.save_local_settings()
 
         self.send_06_command(STATUS_REQUEST_MESSAGE)
 

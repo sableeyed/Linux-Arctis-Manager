@@ -26,8 +26,15 @@ The application then listens to the headset's USB dongle signals and interprets 
 The software is based on the following prerequisites:
 
 - Python 3.x
-- [PyUSB](https://github.com/walac/pyusb) python module (which will be locally installed by the installer directly, if not detected. **Do not try to install it system-wide with `pip`, it might break your system!**)
+- Locally installable (via `pip install --user`) Python modules (prompt will ask if you want to install them locally):
+  - [PyUSB](https://pyusb.github.io/pyusb/) - USB communication library
+  - [qasync](https://github.com/CabbageDevelopment/qasync) - seamless async integration with Qt applications
+- Globally (via package manager) or locally (via `pip install --user`) installable Python modules (prompt will ask accordingly)
+  - [PyQt6](https://www.riverbankcomputing.com/software/pyqt/) (suggested: globally due to its size) - Qt6 bindings for UI parts
 - PulseAudio (very common in modern Linux distributions)
+
+**Note**
+Do not install any python module globally, never (i.e. using `sudo pip install ...`), it might break your linux distribution!
 
 ### Execution
 
@@ -36,15 +43,16 @@ In order to install the application, simply run `./install.sh` (as user, not as 
 The following subsystems will be installed:
 - udev rules to set the ownership of the `/dev` device and to create a `/dev/arctischatmix` symlink to trigger the service (see below). The ownership part is not perfect for multi-users setups, but I'm working on it.
 - user space's systemd service, which starts up at device plugin (or user's login) and shuts down at device plug-out (or user's log off).
-- the Python application, including the service which communicates to the device, and a system tray icon which will display all the available information. **TODO**: provide the possibility to alter some of the configurations, like wireless mode or noise cancelling level.
+- the Python application, including the service which communicates to the device, and a system tray icon which will display all the available information. If any setting is configurable software-side, the system tray app will show the relative action to open the settings menu.
 
 **Note**: your device should automatically be configured after installation. If not, please unplug and plug the device again.
 
 ## Supported devices
 
 - **Arctis 7+** (original development by [birdls](https://github.com/birdybirdonline))
+  - Variants: PS5, XBOX, Destiny (only name and device id are changed)
 - **Arctis Nova Pro Wireless** (developed by [Giacomo Furlan](https://github.com/elegos)). Note: the PulseAudio's channel's volume will stay at 100% even turning the knob, because it is managed by the GameDAC gen2 directly, so applying an audio reduction would apply it twice.
-- **Arctis Nova Pro Wireless X** (essentially the non-X version, with different product id and name)
+  - Variants: X (name and device id changed)
 
 ## How to add the support to a new device
 
