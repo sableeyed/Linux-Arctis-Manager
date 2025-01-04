@@ -96,4 +96,19 @@ Thanks to:
 
 ## Need support?
 
-Don't hesitate to [open an issue](https://github.com/elegos/Linux-Arctis-ChatMix/issues). Please include as many details as possible, for example the otuput of `journalctl -b -f -u systemd-udevd`.
+Don't hesitate to [open an issue](https://github.com/elegos/Linux-Arctis-ChatMix/issues).
+
+Please include as many details as possible, for example the otuput of `journalctl --user -b -f -u arctis-pcm`.
+
+You can also run the software in debug mode, for increased output:
+
+```bash
+$ systemctl --user stop arctis-pcm.service
+$ cd ~/.local/bin
+$ python3 ./arctis_chatmix.py -v
+# Debug level log will show
+
+# To start again the service in normal mode
+[CTRL]+[C]
+$ systemctl --user start arctis-pcm.service
+```
