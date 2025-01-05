@@ -84,6 +84,11 @@ Important notes:
 - if working with vscode, a launch setup is ready to use (`arctis_chatmix debug`) which will run the software with debug logging
 - remember to refresh your installation once finished (see installation section)
 
+
+### Need help on reverse engineering?
+
+Try looking at the [wireshark guide](docs/WIRESHARK.md)!
+
 ### Do I need to override the `DeviceManager.init_device` for my new device?
 
 It really depends. In my experience yes, if you have a GameDAC. If your device uses a GameDAC v2, it is possible that you can simply copy the Arctis Nova Pro Wireless method, which essentially enables the (otherwise missing) mixer functionality. The packets sent by that manager have been recorded using WireShark listening on the USB interface and I'm unsure whether all of them are required or not. If one or more features are missing to your device, you will probably need to tinker with Wireshark (or similar) listening on the USB interfaces and try to figure it out.
