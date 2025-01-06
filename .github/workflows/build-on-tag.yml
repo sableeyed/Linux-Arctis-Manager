@@ -1,0 +1,45 @@
+on:
+  push:
+    tags:
+      - 'v*'
+  
+name: Create RPM Release
+
+jobs:
+  build_rpm:
+    name: Create RPM Release
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: Checkout code
+      uses: actions/checkout@master
+
+    - name: Read CHANGELOG.md
+      id: changelog
+      uses: jaywcjlove/github-action-read-file@main
+      with:
+        path: CHANGELOG.md
+    
+    - name: Replace version in RPM spec so correct source is downloaded when building RPM
+      run: sed -Ei 's/(^Version:[[:space:]]*).*/\1${{github.ref_name}}/' arctis-manager.rpm.spec
+        
+    - name: Run rpmbuild on RPM spec to produce package
+      id: rpm_build
+      uses: naveenrajm7/rpmbuild@master
+      with:
+        spec_file: "arctis-manager.rpm.spec"
+
+  release:
+    name: Create release with all assets
+    needs: [build_rpm]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download cached rpm artifact
+        uses: actions/download-artifact@v3
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            arctis-manager-${{ github.ref_name }}-1.${{ env.DIST }}.${{ env.ARCH }}.rpm/**/*.rpm
