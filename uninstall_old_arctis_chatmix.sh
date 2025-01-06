@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-## This script aims to uninstall the previous "arctis-chatmix" software,
+## This script uninstalls the previous "arctis-chatmix" software,
 ## due to the name change.
 
 bin_local_dir="$HOME/.local/bin/"
@@ -41,8 +41,7 @@ function rem {
     eval "${cmd}"
 }
 
-systemctl --user disable arctis-pcm.service
-systemctl --user stop arctis-pcm.service
+systemctl --user disable --now arctis-pcm.service 2>/dev/null
 
 for file in "${local_bin_files_and_folders[@]}"; do
     rem "${bin_local_dir}${file}"

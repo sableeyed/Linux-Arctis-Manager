@@ -80,6 +80,9 @@ function uninstall() {
     done
 }
 
+# Uninstall previous version
+./uninstall_old_arctis_chatmix.sh
+
 if [[ -v UNINSTALL ]]; then
     uninstall
 else
