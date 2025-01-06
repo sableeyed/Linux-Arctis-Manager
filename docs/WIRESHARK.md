@@ -15,7 +15,7 @@ This is quite a try and error approach, but usually it works.
 
 ### Step 1.1: start the listening
 
-First things first: listen on USB hubs. In my particular case, I have 4 different hubs, so I have 4 different USBpcap interfaces in wireshark. If you know on which hub the device is on, choose that one directly, otherwise select them all, like in this screenshot, then click on the blue fin icon on the top right of the application.
+First things first: listen on USB hubs. In my particular case, I have 4 different hubs, so I have 4 different USBpcap interfaces in wireshark. If you know on which hub the device is on, choose that one directly, otherwise select them all, like in this screenshot, then click on the blue fin icon on the top left of the application.
 
 ![USBpcap interface selection](img/wireshark_usbpcap_select.png)
 
