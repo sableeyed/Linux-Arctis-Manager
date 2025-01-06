@@ -51,12 +51,10 @@ cp -r "${ARCTIS_DEVICES_FOLDER}" "${SCRIPT_DIR}"
 echo
 echo "Installing udev rule to ${UDEV_DIR}${UDEV_CONFIG}."
 echo "You may need to provide your sudo password for this step."
-envsubst < "${CONFIG_DIR}${UDEV_CONFIG}" > "$UDEV_CONFIG"
-sudo cp "$UDEV_CONFIG" "$UDEV_DIR" || \
+sudo cp "${CONFIG_DIR}${UDEV_CONFIG}" "${UDEV_DIR}" || \
     { echo "FATAL: Failed to copy $UDEV_CONFIG" ; cleanup ; exit 1;}
 sudo udevadm control --reload
 sudo udevadm trigger
-rm -f "$UDEV_CONFIG"
 
 echo
 echo "Disabling previous service before installation"
