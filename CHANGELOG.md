@@ -9,8 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Make udev rules user-agnostic
-- Project name change from "Arctis ChatMix" to "Arctis Manager" to reflect the project goals
+- Project name change from "Arctis ChatMix" to "Arctis Manager" to reflect the wider project goals
+- User-agnostic, revamped udev rules
+- New install script to install the software in proper prefix
 
 ## [1.4]
 

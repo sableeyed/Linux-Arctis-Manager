@@ -28,10 +28,15 @@ The software is based on the following prerequisites:
 
 In order to install the application, simply run `./install.sh` (as user, not as root). In order to uninstall, prepend `UNINSTALL= `, i.e. `UNINSTALL= ./install.sh`.
 
-The following subsystems will be installed:
-- udev rules to set the ownership of the `/dev` device and to create a `/dev/steelseries-arctis` symlink to trigger the service (see below). The ownership part is not perfect for multi-users setups, but I'm working on it.
-- user space's systemd service, which starts up at device plugin (or user's login) and shuts down at device plug-out (or user's log off).
-- the Python application, including the service which communicates to the device, and a system tray icon which will display all the available information. If any setting is configurable software-side, the system tray app will show the relative action to open the settings menu.
+An optional `PREFIX` variable can be defined to install the software in a custom location (default: `/usr/local`)
+
+#### Installed files
+
+The following parts will be installed:
+- `/usr/lib/udev/rules.d/`: udev rules to set the ownership of the `/dev` device and to create a `/dev/steelseries/arctis` symlink to trigger the service (see below). The ownership part is not perfect for multi-users setups, but I'm working on it.
+- `/usr/lib/systemd/user/`: user space's systemd service, which starts up at device plugin (or user's login) and shuts down at device plug-out (or user's log off).
+- `/usr/local/lib/arctis-manager` (or `$PREFIX/lib/arctis-manager`): the Python application, including the service which communicates to the device, and a system tray icon which will display all the available information. If any setting is configurable software-side, the system tray app will show the relative action to open the settings menu.
+- `/usr/local/bin/arctis-manager` (or `$PREFIX/bin/arctis-manager`): a bash script to start the service.
 
 ## Screenshots
 
