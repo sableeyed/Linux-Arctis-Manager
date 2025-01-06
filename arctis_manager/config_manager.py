@@ -17,7 +17,7 @@ class ConfigManager:
     def __init__(self):
         config_home = os.getenv('XDG_CONFIG_HOME', os.path.expanduser('~/.config'))
 
-        self.config_path = Path(config_home).joinpath('arctis_chatmix')
+        self.config_path = Path(config_home).joinpath('arctis_manager')
         self.config_path.mkdir(parents=True, exist_ok=True)
 
     def get_config(self, vendor_id: int, product_id: int) -> Optional[dict]:

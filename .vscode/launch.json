@@ -5,10 +5,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "arctis_chatmix debug",
+            "name": "arctis_manager debug",
             "type": "debugpy",
             "request": "launch",
-            "program": "arctis_chatmix.py",
+            "program": "arctis_manager.py",
             "console": "integratedTerminal",
             "args": ["--verbose"],
             "justMyCode": false

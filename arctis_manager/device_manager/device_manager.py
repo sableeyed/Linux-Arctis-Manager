@@ -7,11 +7,11 @@ from typing import Literal, Optional
 import usb.core
 import usb.util
 
-from arctis_chatmix.device_manager.channel_position import ChannelPosition
-from arctis_chatmix.device_manager.chat_mix_state import ChatMixState
-from arctis_chatmix.device_manager.device_settings import DeviceSetting
-from arctis_chatmix.device_manager.device_status import DeviceStatus
-from arctis_chatmix.device_manager.interface_endpoint import InterfaceEndpoint
+from arctis_manager.device_manager.channel_position import ChannelPosition
+from arctis_manager.device_manager.chat_mix_state import DeviceState
+from arctis_manager.device_manager.device_settings import DeviceSetting
+from arctis_manager.device_manager.device_status import DeviceStatus
+from arctis_manager.device_manager.interface_endpoint import InterfaceEndpoint
 
 
 def device_manager_factory(product_id: int, device_name: str) -> 'DeviceManager':
@@ -149,7 +149,7 @@ class DeviceManager(ABC):
         return None
 
     @abstractmethod
-    def manage_input_data(self, data: list[int], endpoint: InterfaceEndpoint) -> ChatMixState:
+    def manage_input_data(self, data: list[int], endpoint: InterfaceEndpoint) -> DeviceState:
         '''
         Manage the data received from the device at the given endpoint, returning the new state.
         '''

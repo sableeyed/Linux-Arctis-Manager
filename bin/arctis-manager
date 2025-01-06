@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+# Placeholder is being replaced by the installer script
+cd "{{LIBDIR}}"
+
+python3 ./arctis_manager.py

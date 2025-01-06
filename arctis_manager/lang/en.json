@@ -1,7 +1,7 @@
 {
     "app": {
         "settings_label": "Settings",
-        "settings_window_title": "Arctis ChatMix settings"
+        "settings_window_title": "Arctis Device settings"
     },
     
     "sections": {

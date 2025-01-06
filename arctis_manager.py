@@ -4,7 +4,7 @@ import signal
 import sys
 from typing import Literal
 
-from arctis_chatmix.translations import Translations
+from arctis_manager.translations import Translations
 
 # Setup the notify logging
 NOTIFY = 19  # Right before "INFO"
@@ -13,7 +13,7 @@ notify_enabled = os.system('which notify-send 1>/dev/null 2>&1') == 0
 
 def logging_notify(self: logging.Logger, summary: str, message: str, urgency: Literal['low', 'normal', 'critical'] = 'normal', *args, **kwargs):
     if notify_enabled:
-        args = ['--app-name="Arctis ChatMix"', f'--urgency={urgency}', '--expire-time=2000']
+        args = ['--app-name="Arctis Manager"', f'--urgency={urgency}', '--expire-time=2000']
         os.system(f'notify-send {' '.join(args)} "{summary}" "{message.format(*args, **kwargs).replace('"', '\\"')}"')
     else:
         self._log(logging.INFO, f'NOTIFICATION: {summary} :: {message}', args, **kwargs)
@@ -30,8 +30,8 @@ if __name__ == '__main__':
     from PyQt6.QtWidgets import QApplication
     from qasync import QEventLoop
 
-    from arctis_chatmix.arctis_chatmix_daemon import ArctisChatMixDaemon
-    from arctis_chatmix.systray_app import SystrayApp
+    from arctis_manager.arctis_manager_daemon import ArctisManagerDaemon
+    from arctis_manager.systray_app import SystrayApp
 
     args = ArgumentParser()
     args.add_argument('-v', '--verbose', action='count', default=0)
@@ -43,7 +43,7 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
 
     log_level = logging.DEBUG if args.verbose else NOTIFY
-    daemon = ArctisChatMixDaemon(log_level=log_level)
+    daemon = ArctisManagerDaemon(log_level=log_level)
     systray_app = SystrayApp(app=app, log_level=log_level)
     # Init the translations with the logging level
     i18n = Translations.get_instance(log_level=log_level)

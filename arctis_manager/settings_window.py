@@ -6,12 +6,12 @@ from PyQt6.QtWidgets import (QFormLayout, QHBoxLayout, QLabel, QLayout,
                              QListWidget, QMainWindow, QSlider, QStackedWidget,
                              QWidget)
 
-from arctis_chatmix.custom_widgets.q_toggle import QToggle
-from arctis_chatmix.device_manager.device_settings import (DeviceSetting,
+from arctis_manager.custom_widgets.q_toggle import QToggle
+from arctis_manager.device_manager.device_settings import (DeviceSetting,
                                                            SliderSetting,
                                                            ToggleSetting)
-from arctis_chatmix.qt_utils import get_icon_pixmap
-from arctis_chatmix.translations import Translations
+from arctis_manager.qt_utils import get_icon_pixmap
+from arctis_manager.translations import Translations
 
 
 class SettingsWindow(QMainWindow):

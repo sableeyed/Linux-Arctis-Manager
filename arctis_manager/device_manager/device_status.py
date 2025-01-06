@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Any, Callable, Generic, Optional, TypeVar
 
-from arctis_chatmix.translations import Translations
+from arctis_manager.translations import Translations
 
 T = TypeVar('T')
 

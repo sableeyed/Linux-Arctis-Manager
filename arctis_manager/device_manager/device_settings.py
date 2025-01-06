@@ -2,7 +2,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Callable
 
-from arctis_chatmix.translations import Translations
+from arctis_manager.translations import Translations
 
 
 class DeviceSetting(ABC):

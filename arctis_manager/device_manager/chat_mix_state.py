@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 
-from arctis_chatmix.device_manager.device_status import DeviceStatus
+from arctis_manager.device_manager.device_status import DeviceStatus
 
 
 @dataclass(frozen=True)
-class ChatMixState:
+class DeviceState:
     '''Status of the chat mix'''
 
     '''Volume of the Game channel (0.0 to 1.0)'''

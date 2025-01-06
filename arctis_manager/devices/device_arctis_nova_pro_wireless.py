@@ -1,12 +1,12 @@
 from typing import Optional
 
-from arctis_chatmix.config_manager import ConfigManager
-from arctis_chatmix.device_manager import (ChatMixState, DeviceManager,
+from arctis_manager.config_manager import ConfigManager
+from arctis_manager.device_manager import (DeviceState, DeviceManager,
                                            DeviceStatus, InterfaceEndpoint)
-from arctis_chatmix.device_manager.device_settings import (DeviceSetting,
+from arctis_manager.device_manager.device_settings import (DeviceSetting,
                                                            SliderSetting,
                                                            ToggleSetting)
-from arctis_chatmix.device_manager.device_status import DeviceStatusValue
+from arctis_manager.device_manager.device_status import DeviceStatusValue
 
 INACTIVE_TIME_MINUTES = {
     0: 0,
@@ -119,7 +119,7 @@ class ArctisNovaProWirelessDevice(DeviceManager):
         for command in commands:
             self.send_06_command(command[0], False)
 
-    def manage_input_data(self, data: list[int], endpoint: InterfaceEndpoint) -> ChatMixState:
+    def manage_input_data(self, data: list[int], endpoint: InterfaceEndpoint) -> DeviceState:
         volume = 1
         device_status = None
 
@@ -159,7 +159,7 @@ class ArctisNovaProWirelessDevice(DeviceManager):
         else:
             self.log.debug(f'Incoming data from {endpoint.interface}, {endpoint.endpoint}: [{':'.join(hex(x)[2:] for x in data)}]')
 
-        return ChatMixState(
+        return DeviceState(
             game_volume=volume,
             chat_volume=volume,
             game_mix=self.game_mix if self.game_mix is not None else 1,

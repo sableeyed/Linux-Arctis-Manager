@@ -1,78 +1,87 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-#     Copyright (C) 2024 - present: elegos - see LICENSE.md
-#     @ https://github.com/elegos/Linux-Arctis-7-Plus-ChatMix
+if [ -z "${PREFIX}" ]; then
+    install_prefix=/usr/local
+else
+    install_prefix=${PREFIX}
+fi
 
-#     Copyright (C) 2022: birdybirdonline & awth13 - see LICENSE.md
-#     @ https://github.com/birdybirdonline/Linux-Arctis-7-Plus-ChatMix
-    
-#     In case of problems, please open an issue on Github
-#     https://github.com/elegos/Linux-Arctis-ChatMix/issues
+# Files to install
+lib_files_and_dirs=("arctis_manager.py" "arctis_manager")
+bin_files=("bin/arctis-manager")
+systemd_service_file="systemd/arctis-manager.service"
+udev_rules_file="udev/91-steelseries-arctis.rules"
 
+# Install directories
+bin_dir="${install_prefix}/bin"
+lib_dir="${install_prefix}/lib/arctis-manager"
+udev_dir="/usr/lib/udev/rules.d/"
+systemd_dir="/usr/lib/systemd/user/"
 
-./scripts/dependencies.sh
+function install() {
+    echo "Installing Arctis Manager..."
 
-CONFIG_DIR="system-config/"
-SYSTEMD_CONFIG="arctis-pcm.service"
-UDEV_CONFIG="91-steelseries-arctis.rules"
-SCRIPT="arctis_chatmix.py"
-ARCTIS_DEVICES_FOLDER="arctis_chatmix"
+    sudo mkdir -p "${bin_dir}"
+    sudo mkdir -p "${lib_dir}"
 
-SCRIPT_DIR="$HOME/.local/bin/"
-SYSTEMD_DIR="$HOME/.config/systemd/user/"
-UDEV_DIR="/etc/udev/rules.d/"
+    echo "Installing binaries in ${bin_dir}"
+    for file in "${bin_files[@]}"; do
+        dest_file="${bin_dir}/$(basename "${file}")"
+        sudo cp "${file}" "${dest_file}"
 
-function cleanup {
+        # Replace placeholders
+        sudo sed -i "s|{{LIBDIR}}|${lib_dir}|g" "${dest_file}"
+    done
+
+    echo "Installing application data in ${lib_dir}"
+    for file in "${lib_files_and_dirs[@]}"; do
+        if [ -f "${file}" ]; then
+            sudo cp "${file}" "${lib_dir}/"
+        elif [ -d "${file}" ]; then
+            sudo cp -r "${file}" "${lib_dir}/"
+        fi
+    done
+
+    # Note: using sudo with pip to install modules
+    # It is harmless, as it will target a custom folder
+    echo "Installing python dependencies in ${lib_dir}"
+    sudo python3 -m pip install --upgrade --quiet --root-user-action=ignore -r requirements.txt --target "${lib_dir}"
+
+    # Udev rules
+    echo "Installing udev rules."
+    sudo cp "${udev_rules_file}" "${udev_dir}"
+    sudo udevadm control --reload
+    sudo udevadm trigger
+
+    # SystemD service
+    echo "Installing and enabling systemd user service."
+    systemctl --user disable --now "$(basename ${systemd_service_file})" 2>/dev/null
+    sudo cp "${systemd_service_file}" "${systemd_dir}"
+    systemctl --user enable --now "$(basename ${systemd_service_file})"
+}
+
+function uninstall() {
+    echo "Uninstalling Arctis Manager..."
     echo
-    echo "Cleaning up:"
-    sudo rm -vf "${UDEV_DIR}${UDEV_CONFIG}"
-    rm -f "$UDEV_CONFIG"
-    rm -vf "${SCRIPT_DIR}${SCRIPT}"
-    rm -vrf "${SCRIPT_DIR}${ARCTIS_DEVICES_FOLDER}"
-    rm -vf "${SYSTEMD_DIR}${SYSTEMD_CONFIG}"
-    systemctl --user disable "$SYSTEMD_CONFIG"
+
+    echo "Removing udev rules."
+    sudo rm -rf "${udev_dir}/$(basename ${udev_rules_file})" 2>/dev/null
+
+    echo "Removing user systemd service."
+    # systemd service
+    systemctl --user disable --now "$(basename ${systemd_service_file})" 2>/dev/null
+    sudo rm -rf "${systemd_dir}/$(basename ${systemd_service_file})" 2>/dev/null
+
+    # Remove the custom lib dir
+    echo "Removing application data."
+    sudo rm -rf "${lib_dir}" 2>/dev/null
+    for file in "${bin_files[@]}"; do
+        sudo rm -rf "${bin_dir}/$(basename "${file}")" 2>/dev/null
+    done
 }
 
 if [[ -v UNINSTALL ]]; then
-    echo "Uninstalling Arctis ChatMix."
-    echo "You may need to provide your sudo password for removing udev rule."
-    cleanup ; exit 0
+    uninstall
+else
+    install
 fi
-
-echo "Installing Arctis ChatMix."
-echo "Installing script to ${SCRIPT_DIR}${SCRIPT}."
-if [[ ! -d "$SCRIPT_DIR" ]]; then
-    mkdir -vp "${SCRIPT_DIR}" || \
-        { echo "FATAL: Failed to create $SCRIPT_DIR" ; cleanup ; exit 1;}
-fi
-cp "${SCRIPT}" "${SCRIPT_DIR}"
-cp -r "${ARCTIS_DEVICES_FOLDER}" "${SCRIPT_DIR}"
-
-echo
-echo "Installing udev rule to ${UDEV_DIR}${UDEV_CONFIG}."
-echo "You may need to provide your sudo password for this step."
-sudo cp "${CONFIG_DIR}${UDEV_CONFIG}" "${UDEV_DIR}" || \
-    { echo "FATAL: Failed to copy $UDEV_CONFIG" ; cleanup ; exit 1;}
-sudo udevadm control --reload
-sudo udevadm trigger
-
-echo
-echo "Disabling previous service before installation"
-systemctl --user disable --now "$SYSTEMD_CONFIG" 2>/dev/null
-
-echo
-echo "Installing systemd unit to ${SYSTEMD_DIR}${SYSTEMD_CONFIG}."
-if [[ ! -d "$SYSTEMD_DIR" ]]; then
-    mkdir -vp "${SYSTEMD_DIR}" || \
-        { echo "FATAL: Failed to create $SCRIPT_DIR" ; cleanup ; exit 1;}
-fi
-cp "${CONFIG_DIR}${SYSTEMD_CONFIG}" "$SYSTEMD_DIR"
-
-
-echo
-echo "Reloading systemd daemons (user)."
-systemctl --user daemon-reload 2>/dev/null
-
-echo
-echo "Enabling systemd unit $SYSTEMD_CONFIG."
-systemctl --user enable --now "$SYSTEMD_CONFIG" 2>/dev/null

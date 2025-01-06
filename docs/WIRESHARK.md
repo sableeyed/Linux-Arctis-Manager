@@ -53,7 +53,7 @@ Now you can repeat the process to map all the setting of the device, with all th
 
 It is useful to understand that the Arctis devices might be initialized upon connection. It is thus useful to unplug the device, start the wireshark listening again (with the filters applied), insert the device **in the same USB port** and watch what happens. Once you've mapped the settings, you'll probably find known and unknown packets passing through, some of which might enable some functionalities like the knob for the mixer (which on the Nova Pro Wireless is disabled by default).
 
-Another note: some requests are being replied with data, which usually contain the device status. Not all the settings are returned though, in my experience. Take a look on [ArctisNovaProWirelessDeviceManager](../arctis_chatmix/devices/device_arctis_nova_pro_wireless.py) to get an idea on how to manage the device status.
+Another note: some requests are being replied with data, which usually contain the device status. Not all the settings are returned though, in my experience. Take a look on [ArctisNovaProWirelessDeviceManager](../arctis_manager/devices/device_arctis_nova_pro_wireless.py) to get an idea on how to manage the device status.
 
 ## Final words
 

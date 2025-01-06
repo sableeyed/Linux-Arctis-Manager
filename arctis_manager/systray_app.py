@@ -9,11 +9,11 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QAction, QIcon, QImage, QPainter, QPalette, QPixmap
 from PyQt6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 
-from arctis_chatmix.device_manager import DeviceStatus
-from arctis_chatmix.device_manager.device_manager import DeviceManager
-from arctis_chatmix.qt_utils import get_icon_pixmap
-from arctis_chatmix.settings_window import SettingsWindow
-from arctis_chatmix.translations import Translations
+from arctis_manager.device_manager import DeviceStatus
+from arctis_manager.device_manager.device_manager import DeviceManager
+from arctis_manager.qt_utils import get_icon_pixmap
+from arctis_manager.settings_window import SettingsWindow
+from arctis_manager.translations import Translations
 
 
 class SystrayApp:
@@ -63,7 +63,7 @@ class SystrayApp:
         pixmap = get_icon_pixmap()
 
         self.tray_icon = QSystemTrayIcon(QIcon(pixmap), parent=self.app)
-        self.tray_icon.setToolTip('Arctis ChatMix')
+        self.tray_icon.setToolTip('Arctis Manager')
 
         self.menu_entries = {}
 

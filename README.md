@@ -1,23 +1,15 @@
-# Linux-Arctis-ChatMix
+# Linux-Arctis-Manager
 
 ## Important Licensing Notice
 
-`Linux-Arctis-Chatmix` is under the GPLv3 license. While the GPL license does permit commercial use, it is **strongly discouraged** to reuse the work herein for any for-profit purpose as it relates to the usage of a third party proprietary hardware device.
+`Linux-Arctis-Manager` is under the GPLv3 license. While the GPL license does permit commercial use, it is **strongly discouraged** to reuse the work herein for any for-profit purpose as it relates to the usage of a third party proprietary hardware device.
 
 
 ## Overview
-The SteelSeries Arctis series of headsets include a hardware modulation knob for 'chatmix' on the headset and, in some models, have a DAC hardware doing the same. This allows the user to 'mix' the volume of two different devices on their system, named "Game" and "Chat".
 
-On older Arctis models (e.g. Arctis 7), the headset would be detected as two individual hardware devices by the host operating system and would assign them as such accordingly, allowing the user to specify which device to use and where.
+The SteelSeries Arctis headsets series include a variety of features, like two mixable channels for VoIP and gaming (known as "ChatMix"), a hardware modulation knob, side-tone management, gain, etc. This is done partly hardware and partly software side, though the SteelSeries Engine (now included in the GG software) is required to setup and manage them all. If no software is used, only the very basic features are enabled (stereo audio out, mic in, hardware mute, possibly ANC).
 
-**Typical use case:** "Chat" for voicechat in games and VOIP/comms software, and "Game" for system / music etc.
-
-On the Arctis 7+ model (and others), this two-device differentiation no longer exists, and the host OS will only recognize a single device. If the user wishes to utilize the chatmix modulation knob, he/she *must* install the SteelSeries proprietary GG software, which is not available on Linux nor can be executed for example via Wine.
-
-This script provides a basic workaround for this problem for Linux users. It creates two different virtual Audio/Sink PulseAudio node, called "(DEVICE NAME) Game"
-and "(DEVICE NAME) Chat" respectively, that the user can then assign indipendently to his/her applications.
-
-The application then listens to the headset's USB dongle signals and interprets them in a way that can be meaningfully converted to adjust the audio when the user moves the dial on the headset.
+This project aims to fill the gap, allowing the user to easily manage his/her own device on Linux distributions. On the plus side, this software is way lighter than SteelSeries's original :D
 
 ## Install
 
@@ -25,24 +17,19 @@ The application then listens to the headset's USB dongle signals and interprets 
 
 The software is based on the following prerequisites:
 
-- Python 3.9+
-- Python modules (they will be installed automatically by the `install.sh` script)
-  - Locally installable (via `pip install --user`) Python modules (prompt will ask if you want to install them locally):
-    - [PyUSB](https://pyusb.github.io/pyusb/) - USB communication library
-    - [qasync](https://github.com/CabbageDevelopment/qasync) - seamless async integration with Qt applications
-  - Globally (via package manager) or locally (via `pip install --user`) installable Python modules (prompt will ask accordingly)
-    - [PyQt6](https://www.riverbankcomputing.com/software/pyqt/) (suggested: globally due to its size) - Qt6 bindings for UI parts
 - PulseAudio (very common in modern Linux distributions), including the `pactl` command line (perhaps not installed by default, possibly the `pulseaudio-utils` system package)
-
-**Note**
-Do not install any python module globally, never (i.e. using `sudo pip install ...`), it might break your linux distribution!
+- Python 3.9+ with `pip` installed
+- Python modules (they will be installed automatically in the install directory via pip)
+  - [PyUSB](https://pyusb.github.io/pyusb/) - USB communication library
+  - [qasync](https://github.com/CabbageDevelopment/qasync) - seamless async integration with Qt applications
+  - [PyQt6](https://www.riverbankcomputing.com/software/pyqt/) (suggested: globally due to its size) - Qt6 bindings for UI parts
 
 ### Execution
 
 In order to install the application, simply run `./install.sh` (as user, not as root). In order to uninstall, prepend `UNINSTALL= `, i.e. `UNINSTALL= ./install.sh`.
 
 The following subsystems will be installed:
-- udev rules to set the ownership of the `/dev` device and to create a `/dev/arctischatmix` symlink to trigger the service (see below). The ownership part is not perfect for multi-users setups, but I'm working on it.
+- udev rules to set the ownership of the `/dev` device and to create a `/dev/steelseries-arctis` symlink to trigger the service (see below). The ownership part is not perfect for multi-users setups, but I'm working on it.
 - user space's systemd service, which starts up at device plugin (or user's login) and shuts down at device plug-out (or user's log off).
 - the Python application, including the service which communicates to the device, and a system tray icon which will display all the available information. If any setting is configurable software-side, the system tray app will show the relative action to open the settings menu.
 

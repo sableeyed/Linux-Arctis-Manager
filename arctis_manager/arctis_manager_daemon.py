@@ -10,13 +10,13 @@ from typing import Callable
 
 import usb.core
 
-from arctis_chatmix.device_manager import DeviceManager, DeviceStatus, InterfaceEndpoint
+from arctis_manager.device_manager import DeviceManager, DeviceStatus, InterfaceEndpoint
 
 PA_GAME_NODE_NAME = 'Arctis_Game'
 PA_CHAT_NODE_NAME = 'Arctis_Chat'
 
 
-class ArctisChatMixDaemon:
+class ArctisManagerDaemon:
     log: logging.Logger
 
     device: usb.core.Device
@@ -54,8 +54,8 @@ class ArctisChatMixDaemon:
         registered_devices = []
 
         # Dynamically instantiate the device managers
-        for _, name, _ in pkgutil.iter_modules(['arctis_chatmix/devices']):
-            module = __import__(f'arctis_chatmix.devices.{name}', fromlist=[name])
+        for _, name, _ in pkgutil.iter_modules(['arctis_manager/devices']):
+            module = __import__(f'arctis_manager.devices.{name}', fromlist=[name])
             for _, cls in inspect.getmembers(module, inspect.isclass):
                 if issubclass(cls, DeviceManager) and cls is not DeviceManager:
                     device_manager = cls()
@@ -173,7 +173,7 @@ class ArctisChatMixDaemon:
 
     async def start(self, version):
         """
-        Start the Arctis ChatMix daemon.
+        Start the Arctis Manager daemon.
 
         This method initializes and starts the daemon service by registering
         supported devices, identifying a compatible Arctis device, initializing
@@ -186,7 +186,7 @@ class ArctisChatMixDaemon:
         """
 
         self.log.info('-------------------------------')
-        self.log.info('- Arctis ChatMix is starting. -')
+        self.log.info('- Arctis Manager is starting. -')
         self.log.info(f'-{('v ' + version).rjust(27)}  -')
         self.log.info('-------------------------------')
 
@@ -257,18 +257,18 @@ class ArctisChatMixDaemon:
         while not self._shutdown:
             try:
                 read_input = await asyncio.to_thread(self.device.read, self.addr, 64)
-                chatmix_state = self.device_manager.manage_input_data(read_input, interface_endpoint)
+                device_state = self.device_manager.manage_input_data(read_input, interface_endpoint)
 
-                default_device_volume = "{}%".format(self._normalize_audio(chatmix_state.game_volume, chatmix_state.game_mix))
-                virtual_device_volume = "{}%".format(self._normalize_audio(chatmix_state.chat_volume, chatmix_state.chat_mix))
+                default_device_volume = "{}%".format(self._normalize_audio(device_state.game_volume, device_state.game_mix))
+                virtual_device_volume = "{}%".format(self._normalize_audio(device_state.chat_volume, device_state.chat_mix))
 
                 os.system(f'pactl set-sink-volume Arctis_Game {default_device_volume}')
                 os.system(f'pactl set-sink-volume Arctis_Chat {virtual_device_volume}')
 
                 # Propagate the device status to any registered listener
-                if chatmix_state.device_status is not None:
+                if device_state.device_status is not None:
                     for callback in self.device_status_callbacks:
-                        callback(self.device_manager, chatmix_state.device_status)
+                        callback(self.device_manager, device_state.device_status)
 
             except Exception as e:
                 if not isinstance(e, usb.core.USBTimeoutError):
@@ -341,7 +341,7 @@ class ArctisChatMixDaemon:
         self.log.notify('Audio sink manager', f'Default audio sink set to "{self.get_pa_default_sink_description()}".')
 
         self.log.info('------------------------------')
-        self.log.info('- Arctis ChatMix is stopped. -')
+        self.log.info('- Arctis Manager is stopped. -')
         self.log.info('------------------------------')
 
         for callback in self.shutdown_callbacks:

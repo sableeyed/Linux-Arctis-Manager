@@ -1,5 +1,5 @@
-from arctis_chatmix.device_manager.device_manager import device_manager_factory
-from arctis_chatmix.devices.device_arctis_7_plus import Arctis7PlusDevice
+from arctis_manager.device_manager.device_manager import device_manager_factory
+from arctis_manager.devices.device_arctis_7_plus import Arctis7PlusDevice
 
 
 @device_manager_factory(0x2212, 'Arctis 7+ (PS5)')

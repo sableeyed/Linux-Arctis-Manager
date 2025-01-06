@@ -1,4 +1,4 @@
-from arctis_chatmix.device_manager import (ChatMixState, DeviceManager,
+from arctis_manager.device_manager import (DeviceState, DeviceManager,
                                            DeviceStatus, InterfaceEndpoint)
 
 BATTERY_MIN = 0x00
@@ -12,12 +12,12 @@ class Arctis7PlusDevice(DeviceManager):
     def get_device_name(self) -> str:
         return 'Arctis 7+'
 
-    def manage_input_data(self, data: list[int], endpoint: InterfaceEndpoint) -> ChatMixState:
+    def manage_input_data(self, data: list[int], endpoint: InterfaceEndpoint) -> DeviceState:
         if endpoint == self.utility_guess_endpoint(7, 'in'):
             # This probably needs some more work. Taken from original project.
             # see https://github.com/Sapd/HeadsetControl/blob/master/src/devices/steelseries_arctis_7_plus.c#L103
 
-            return ChatMixState(data[1] / 100, data[2] / 100, 1, 1, DeviceStatus())
+            return DeviceState(data[1] / 100, data[2] / 100, 1, 1, DeviceStatus())
 
     def get_endpoint_addresses_to_listen(self) -> list[InterfaceEndpoint]:
         return self.utility_guess_endpoint(7, 'in')
