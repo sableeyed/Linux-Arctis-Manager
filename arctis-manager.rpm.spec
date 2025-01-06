@@ -3,6 +3,8 @@ Version:    1.5
 Release:    1%{?dist}
 Summary:    SteelSeries Arctis headset devices manager
 License:    GNU GPL v3
+
+URL:        https://github.com/elegos/Linux-Arctis-Manager
 Requires:   python >= 3.9, pulseaudio-utils
 
 %description

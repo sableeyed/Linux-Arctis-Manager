@@ -7,7 +7,7 @@ name: Create RPM Release
 
 jobs:
   build_rpm:
-    name: Create RPM Release
+    name: Build .rpm package
     runs-on: ubuntu-latest
 
     steps:
