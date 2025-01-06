@@ -49,10 +49,10 @@ The following subsystems will be installed:
 ## Screenshots
 
 ### System tray application
-![System tray application](static/system_tray_app.png)
+![System tray application](docs/img/system_tray_app.png)
 
 ### Settings window (in the example: Arctis Nova Pro Wireless)
-![Settings window](static/settings_window.png)
+![Settings window](docs/img/settings_window.png)
 
 
 **Note**: your device should automatically be configured after installation. If not, please unplug and plug the device again.
