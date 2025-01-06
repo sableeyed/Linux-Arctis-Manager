@@ -23,6 +23,8 @@ find . -name "__pycache__" | xargs rm -rf
 %files
 /usr/local/bin/arctis-manager
 /usr/local/lib/arctis-manager/*
+/usr/lib/udev/rules.d/91-steelseries-arctis.rules
+/usr/lib/systemd/user/arctis-manager.service
 
 %changelog
 # let's skip this for now
