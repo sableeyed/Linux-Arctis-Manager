@@ -26,7 +26,7 @@ jobs:
         
     - name: Run rpmbuild on RPM spec to produce package
       id: rpm_build
-      uses: naveenrajm7/rpmbuild@master
+      uses: alvarolopez/rpmbuild@rockylinux9
       with:
         spec_file: "arctis-manager.rpm.spec"
 
