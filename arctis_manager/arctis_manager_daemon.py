@@ -315,6 +315,10 @@ class ArctisManagerDaemon:
         self.shutdown_callbacks.append(callback)
 
     def stop(self):
+        if hasattr(self, '_stopping') and self._stopping:
+            return
+        self._stopping = True
+
         self.log.info('Received shutdown signal, shutting down.')
 
         self.die_gracefully()

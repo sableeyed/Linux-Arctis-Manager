@@ -84,6 +84,10 @@ class SystrayApp:
         self.app.exec_()
 
     def stop(self):
+        if hasattr(self, '_stopping') and self._stopping:
+            return
+        self._stopping = True
+
         self.log.debug('Received shutdown signal, shutting down.')
         self.app.quit()
 
