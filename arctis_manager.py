@@ -2,7 +2,7 @@ import logging
 import os
 import signal
 import sys
-from typing import Literal
+from typing import Coroutine, Literal
 
 from arctis_manager.translations import Translations
 
@@ -63,8 +63,15 @@ if __name__ == '__main__':
     event_loop = QEventLoop(app)
     asyncio.set_event_loop(event_loop)
 
-    asyncio.ensure_future(systray_app.start())
-    asyncio.ensure_future(daemon.start('1.5'))
+    async def async_exception(coro: Coroutine, logger: logging.Logger = logging.getLogger('ArctisManager')):
+        try:
+            await coro
+        except Exception as e:
+            logger.critical(e)
+            sigterm_handler()
+
+    asyncio.ensure_future(async_exception(systray_app.start(), systray_app.log))
+    asyncio.ensure_future(async_exception(daemon.start('1.5.1'), daemon.log))
 
     with event_loop:
         event_loop.run_forever()
