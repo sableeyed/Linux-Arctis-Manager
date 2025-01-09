@@ -250,4 +250,4 @@ class ArctisNovaProWirelessDevice(DeviceManager):
         if kernel_detach:
             self.kernel_detach(endpoint)
 
-        self.device.write(commands_endpoint_address, self.packet_0_filler(command, 91))
+        self.device.write(commands_endpoint_address, self.packet_0_filler(command, 64))
