@@ -20,7 +20,7 @@ class Arctis7PlusDevice(DeviceManager):
             return DeviceState(data[1] / 100, data[2] / 100, 1, 1, DeviceStatus())
 
     def get_endpoint_addresses_to_listen(self) -> list[InterfaceEndpoint]:
-        return self.utility_guess_endpoint(7, 'in')
+        return [self.utility_guess_endpoint(7, 'in')]
 
     def get_request_device_status(self):
         return self.utility_guess_endpoint(7, 'out'), [0x06, 0xb0]
