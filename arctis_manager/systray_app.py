@@ -81,7 +81,7 @@ class SystrayApp:
         self.log.info('Starting Systray app.')
         self.tray_icon.show()
 
-        self.app.exec_()
+        self.app.exec()
 
     def stop(self):
         if hasattr(self, '_stopping') and self._stopping:
