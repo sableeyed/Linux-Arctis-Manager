@@ -4,7 +4,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import (QFormLayout, QHBoxLayout, QLabel, QLayout,
                              QListWidget, QMainWindow, QSlider, QStackedWidget,
-                             QWidget)
+                             QVBoxLayout, QWidget)
 
 from arctis_manager.custom_widgets.q_toggle import QToggle
 from arctis_manager.device_manager.device_settings import (DeviceSetting,
@@ -15,7 +15,7 @@ from arctis_manager.translations import Translations
 
 
 class SettingsWindow(QMainWindow):
-    def __init__(self, sections: dict[str, list[DeviceSetting]]):
+    def __init__(self, device_name: str, sections: dict[str, list[DeviceSetting]]):
         super().__init__()
 
         i18n = Translations.get_instance()
@@ -70,14 +70,32 @@ class SettingsWindow(QMainWindow):
 
             panel_stack.addWidget(panel)
 
-        # Create a central widget and set up the layout
-        central_widget = QWidget()
-        layout = QHBoxLayout()
-        layout.addWidget(section_list)
-        layout.addWidget(panel_stack)
-        central_widget.setLayout(layout)
+        # Window layout
 
-        self.setCentralWidget(central_widget)
+        # Main body widget
+        body_widget = QWidget()
+        body_layout = QHBoxLayout()
+        body_layout.addWidget(section_list)
+        body_layout.addWidget(panel_stack)
+        body_widget.setLayout(body_layout)
+
+        # Device name widget
+        device_name_label = QLabel(device_name)
+        font = device_name_label.font()
+        font.setBold(True)
+        font.setPointSize(16)
+        device_name_label.setFont(font)
+
+        # Main widget
+        main_widget = QWidget()
+        main_layout = QVBoxLayout()
+
+        # Add widgets to the layout
+        main_layout.addWidget(device_name_label)
+        main_layout.addWidget(body_widget)
+        main_widget.setLayout(main_layout)
+
+        self.setCentralWidget(main_widget)
 
     def change_panel(self, index):
         # Change the panel based on the selected section

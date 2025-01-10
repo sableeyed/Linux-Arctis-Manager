@@ -176,7 +176,8 @@ class SystrayApp:
 
     def open_settings_window(self):
         self._settings_window = SettingsWindow(
-            self._device_manager.get_configurable_settings(self._device_status)
+            self._device_manager.get_device_name(),
+            self._device_manager.get_configurable_settings(self._device_status),
         )
 
         self._settings_window.show()
