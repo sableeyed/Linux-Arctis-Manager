@@ -71,7 +71,7 @@ if __name__ == '__main__':
             sigterm_handler()
 
     asyncio.ensure_future(async_exception(systray_app.start(), systray_app.log))
-    asyncio.ensure_future(async_exception(daemon.start('1.5.1'), daemon.log))
+    asyncio.ensure_future(async_exception(daemon.start('1.5.2'), daemon.log))
 
     with event_loop:
         event_loop.run_forever()
