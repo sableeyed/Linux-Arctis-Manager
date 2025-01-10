@@ -90,6 +90,7 @@ It really depends. In my experience yes, if you have a GameDAC. If your device u
 Thanks to:
 - [birdls](https://github.com/birdybirdonline/) for the [original project](https://github.com/birdybirdonline/Linux-Arctis-7-Plus-ChatMix).
 - [Wander Lairson Costa](https://github.com/walac), [mcuee](https://github.com/mcuee) and [Jonas Malaco](https://github.com/jonasmalacofilho) for the [PyUSB](https://github.com/pyusb/pyusb) library
+- [lundiasrj](https://github.com/luandiasrj/) for the custom QWidget [QToggle](https://github.com/luandiasrj/QToggle_-_Advanced_QCheckbox_for_PyQT6)
 
 ## Need support?
 
