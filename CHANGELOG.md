@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
+### Added
 
-- Added device name to settings window
+- Settings window
+  - device name on top of the layout
+  - Dedicated status page on top of the settings
 
 ## [1.5.3]
 

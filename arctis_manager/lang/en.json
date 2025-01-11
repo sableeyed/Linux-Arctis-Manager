@@ -5,9 +5,14 @@
     },
     
     "sections": {
+        "anc": "ANC",
+        "battery": "Battery",
+        "bluetooth": "Bluetooth",
+        "device_status": "Device status",
         "microphone": "Microphone",
         "power_management": "Power management",
-        "wireless": "Wireless"
+        "wireless": "Wireless",
+        "wireless_mode": "Wireless mode"
     },
 
     "settings": {
@@ -66,7 +71,6 @@
         "noise_cancelling": "Noise cancelling: {status}",
 
         "mic_status": "Mic status: {status}",
-
         "mic_led_brightness": "Mic LED brightness: {status}%",
 
         "bluetooth_powerup_state": "Bluetooth turned on: {status}",
