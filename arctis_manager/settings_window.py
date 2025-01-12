@@ -4,19 +4,25 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import (QFormLayout, QHBoxLayout, QLabel, QLayout,
                              QListWidget, QMainWindow, QSlider, QStackedWidget,
-                             QWidget)
+                             QVBoxLayout, QWidget)
 
 from arctis_manager.custom_widgets.q_toggle import QToggle
-from arctis_manager.device_manager.device_settings import (DeviceSetting,
-                                                           SliderSetting,
+from arctis_manager.device_manager.device_manager import DeviceManager
+from arctis_manager.device_manager.device_settings import (SliderSetting,
                                                            ToggleSetting)
+from arctis_manager.device_manager.device_status import DeviceStatus
+from arctis_manager.i18n_helpers import get_translated_menu_entries
 from arctis_manager.qt_utils import get_icon_pixmap
 from arctis_manager.translations import Translations
 
 
 class SettingsWindow(QMainWindow):
-    def __init__(self, sections: dict[str, list[DeviceSetting]]):
+    manager: DeviceManager
+
+    def __init__(self, manager: DeviceManager, status: DeviceStatus):
         super().__init__()
+
+        self.manager = manager
 
         i18n = Translations.get_instance()
 
@@ -29,8 +35,11 @@ class SettingsWindow(QMainWindow):
         available_geometry = self.screen().availableGeometry()
         self.resize(min(800, available_geometry.width()), min(600, available_geometry.height()))
 
+        sections = manager.get_configurable_settings(status)
+
         # Create a list widget for sections on the left
         section_list = QListWidget()
+        section_list.addItem(i18n.get_translation('sections', 'device_status'))
         section_list.addItems([i18n.get_translation('sections', section) for section in sections.keys()])
         section_list.setFixedWidth(max(section_list.sizeHintForColumn(0), 200))
         section_list.currentRowChanged.connect(self.change_panel)
@@ -38,7 +47,25 @@ class SettingsWindow(QMainWindow):
         # Create a stacked widget for panels on the right
         panel_stack = QStackedWidget()
 
-        # Create and add panels to the stacked widget
+        # Status panel
+        self._status_panel = QWidget()
+        layout = QFormLayout()
+        layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+        for section, status_strings in get_translated_menu_entries(status).items():
+            section_label = QLabel(str(section))
+            label_font = section_label.font()
+            label_font.setBold(True)
+            section_label.setFont(label_font)
+            layout.addWidget(section_label)
+
+            for status_string in status_strings:
+                layout.addRow('', QLabel(str(status_string)))
+
+        self._status_panel.setLayout(layout)
+        panel_stack.addWidget(self._status_panel)
+
+        # Settings panels
         for settings in sections.values():
             panel = QWidget()
             layout = QFormLayout()
@@ -70,14 +97,51 @@ class SettingsWindow(QMainWindow):
 
             panel_stack.addWidget(panel)
 
-        # Create a central widget and set up the layout
-        central_widget = QWidget()
-        layout = QHBoxLayout()
-        layout.addWidget(section_list)
-        layout.addWidget(panel_stack)
-        central_widget.setLayout(layout)
+        # Window layout
 
-        self.setCentralWidget(central_widget)
+        # Main body widget
+        body_widget = QWidget()
+        body_layout = QHBoxLayout()
+        body_layout.addWidget(section_list)
+        body_layout.addWidget(panel_stack)
+        body_widget.setLayout(body_layout)
+
+        # Device name widget
+        device_name_label = QLabel(manager.get_device_name())
+        font = device_name_label.font()
+        font.setBold(True)
+        font.setPointSize(16)
+        device_name_label.setFont(font)
+
+        # Main widget
+        main_widget = QWidget()
+        main_layout = QVBoxLayout()
+
+        # Add widgets to the layout
+        main_layout.addWidget(device_name_label)
+        main_layout.addWidget(body_widget)
+        main_widget.setLayout(main_layout)
+
+        self.setCentralWidget(main_widget)
+
+    def update_status(self, status: DeviceStatus):
+        layout = self._status_panel.layout()
+        # Clear the layout from the previous status
+        while layout.count():
+            item = layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
+
+        for section, status_strings in get_translated_menu_entries(status).items():
+            section_label = QLabel(str(section))
+            label_font = section_label.font()
+            label_font.setBold(True)
+            section_label.setFont(label_font)
+            layout.addWidget(section_label)
+
+            for status_string in status_strings:
+                layout.addRow('', QLabel(str(status_string)))
 
     def change_panel(self, index):
         # Change the panel based on the selected section

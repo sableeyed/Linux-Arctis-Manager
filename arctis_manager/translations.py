@@ -1,7 +1,29 @@
+from dataclasses import dataclass, field
 import json
 import locale
 import logging
 from pathlib import Path
+from typing import Optional
+
+
+@dataclass
+class TranslatableText:
+    dot_notation_key: str
+    format_dict: Optional[dict] = field(default_factory=lambda: {})
+
+    def format(self, **kwargs):
+        self.format_dict = kwargs or {}
+
+        return self
+
+    def __str__(self):
+        if not hasattr(self, '_text'):
+            self._text = Translations.get_instance().get_translation(self.dot_notation_key).format(**(self.format_dict or {}))
+
+        return self._text
+
+    def __hash__(self):
+        return str(self).__hash__()
 
 
 class Translations:

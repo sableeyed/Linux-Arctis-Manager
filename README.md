@@ -20,6 +20,7 @@ The software is based on the following prerequisites:
 - PulseAudio (very common in modern Linux distributions), including the `pactl` command line (perhaps not installed by default, possibly the `pulseaudio-utils` system package)
 - Python 3.9+ with `pip` installed
 - Python modules (they will be installed automatically in the install directory via pip)
+  - [dbus-next](https://github.com/altdesktop/python-dbus-next) - DBus library
   - [PyUSB](https://pyusb.github.io/pyusb/) - USB communication library
   - [qasync](https://github.com/CabbageDevelopment/qasync) - seamless async integration with Qt applications
   - [PyQt6](https://www.riverbankcomputing.com/software/pyqt/) (suggested: globally due to its size) - Qt6 bindings for UI parts
@@ -37,6 +38,8 @@ The following parts will be installed:
 - `/usr/lib/systemd/user/`: user space's systemd service, which starts up at device plugin (or user's login) and shuts down at device plug-out (or user's log off).
 - `/usr/local/lib/arctis-manager` (or `$PREFIX/lib/arctis-manager`): the Python application, including the service which communicates to the device, and a system tray icon which will display all the available information. If any setting is configurable software-side, the system tray app will show the relative action to open the settings menu.
 - `/usr/local/bin/arctis-manager` (or `$PREFIX/bin/arctis-manager`): a bash script to start the service.
+- `/usr/share/icons/hicolor/scalable/apps/arctis_manager.svg`: the desktop application's icon.
+- `/usr/local/share/applications/ArctisManager.desktop` (or `$PREFIX/share/applications/ArctisManager.desktop`): the desktop application's definition file.
 
 ## Screenshots
 

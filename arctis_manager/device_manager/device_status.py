@@ -12,8 +12,8 @@ class DeviceStatusValue(Generic[T]):
     value_translation_key: Optional[str] = field(default=None)  # Relative to device_status_values
     mapped_val: Optional[Callable[[T], str]] = field(default=None)  # Optional string value conversion, if decoding is requried
 
-    def __str__(self) -> T:
-        return self.mapped_val(self.value) if self.mapped_val is not None \
+    def __str__(self) -> str:
+        return str(self.mapped_val(self.value)) if self.mapped_val is not None \
             else Translations.get_instance().get_translation('device_status_values', self.value_translation_key) \
             if self.value_translation_key is not None \
             else str(self.value)
@@ -58,3 +58,21 @@ class DeviceStatus:
 
     # Advanced features
     auto_off_time_minutes: Optional[DeviceStatusValue[int]] = field(default_factory=lambda: DeviceStatusValue(None))
+
+    def bluetooth_section(self) -> dict[str, Any]:
+        return {key: getattr(self, key) for key in ['bluetooth_powerup_state', 'bluetooth_auto_mute', 'bluetooth_power_status', 'bluetooth_connection']}
+
+    def wireless_section(self) -> dict[str, Any]:
+        return {key: getattr(self, key) for key in ['wireless_mode', 'wireless_pairing']}
+
+    def battery_section(self) -> dict[str, Any]:
+        return {key: getattr(self, key) for key in ['headset_battery_charge', 'charge_slot_battery_charge', 'headset_power_status']}
+
+    def anc_section(self) -> dict[str, Any]:
+        return {key: getattr(self, key) for key in ['transparent_noise_cancelling_level', 'noise_cancelling']}
+
+    def mic_section(self) -> dict[str, Any]:
+        return {key: getattr(self, key) for key in ['mic_status', 'mic_led_brightness']}
+
+    def advanced_section(self) -> dict[str, Any]:
+        return {key: getattr(self, key) for key in ['auto_off_time_minutes']}

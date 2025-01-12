@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0]
+
+### Added
+
+- Settings window
+  - device name on top of the layout
+  - Dedicated status page on top of the settings
+- System tray app:
+  - added DBus support for name.giacomofurlan.ArctisManager.ShowSettings()
+- Desktop app, which essentially wraps a DBus call to open the settings window
+
 ## [1.5.3]
 
 ### Fixed

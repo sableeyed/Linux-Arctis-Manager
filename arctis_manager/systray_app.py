@@ -11,6 +11,7 @@ from PyQt6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 
 from arctis_manager.device_manager import DeviceStatus
 from arctis_manager.device_manager.device_manager import DeviceManager
+from arctis_manager.i18n_helpers import get_translated_menu_entries
 from arctis_manager.qt_utils import get_icon_pixmap
 from arctis_manager.settings_window import SettingsWindow
 from arctis_manager.translations import Translations
@@ -22,7 +23,6 @@ class SystrayApp:
     app: QApplication
     tray_icon: QSystemTrayIcon
     menu: QMenu
-    menu_entries: dict[str, QAction]
 
     def get_systray_icon_pixmap(self, path: Path) -> QPixmap:
         brush_color = QApplication.palette().color(QPalette.ColorRole.Text)
@@ -65,8 +65,6 @@ class SystrayApp:
         self.tray_icon = QSystemTrayIcon(QIcon(pixmap), parent=self.app)
         self.tray_icon.setToolTip('Arctis Manager')
 
-        self.menu_entries = {}
-
         lang_code, _ = locale.getdefaultlocale()
         lang_code = lang_code.split('_')[0]
 
@@ -91,62 +89,31 @@ class SystrayApp:
         self.log.debug('Received shutdown signal, shutting down.')
         self.app.quit()
 
-    def get_config_status_sections(self, status: DeviceStatus) -> list[dict]:
-        def str_or_none(v):
-            return str(v) if v is not None else None
-
-        return [
-            # Battery
-            {
-                'headset_power_status': {'format': {'status': str_or_none(status.headset_power_status)}},
-                'headset_battery_charge': {'format': {'status': str_or_none(status.headset_battery_charge * 100)}},
-                'charge_slot_battery_charge': {'format': {'status': str_or_none(status.charge_slot_battery_charge * 100)}},
-            },
-            # Microphone
-            {
-                'mic_status': {'format': {'status': str_or_none(status.mic_status)}},
-                'mic_led_brightness': {'format': {'status': str_or_none(status.mic_led_brightness * 100)}},
-            },
-            # Noise cancelling
-            {
-                'noise_cancelling': {'format': {'status': str_or_none(status.noise_cancelling)}},
-                'transparent_noise_cancelling_level': {'format': {'status': str_or_none(status.transparent_noise_cancelling_level * 100)}},
-            },
-            # Wireless mode
-            {
-                'wireless_pairing': {'format': {'status': str_or_none(status.wireless_pairing)}},
-                'wireless_mode': {'format': {'mode': str_or_none(status.wireless_mode)}},
-            },
-            # Bluetooth
-            {
-                'bluetooth_powerup_state': {'format': {'status': str_or_none(status.bluetooth_powerup_state)}},
-                'bluetooth_power_status': {'format': {'status': str_or_none(status.bluetooth_power_status)}},
-                'bluetooth_auto_mute': {'format': {'status': str_or_none(status.bluetooth_auto_mute)}},
-                'bluetooth_connection': {'format': {'status': str_or_none(status.bluetooth_connection)}},
-            }
-        ]
-
     def on_device_status_update(self, device_manager: DeviceManager, status: DeviceStatus) -> None:
         if device_manager is None or status is None:
             return
 
+        self.menu.clear()
+        if not hasattr(self, '_menu_actions'):
+            self._menu_actions = {}
+
+        menu_sections = get_translated_menu_entries(status).values()
+        menu_sections_flatlist = [v for sublist in menu_sections for v in sublist]
+
         has_previous_section = False
-
-        for section in self.get_config_status_sections(status):
-            if not any((val for key, val in section.items() if getattr(status, key) is not None)):
-                continue
-
+        for section in menu_sections:
             if has_previous_section:
                 self.menu.addSeparator()
             has_previous_section = True
 
-            for key, attrs in section.items():
-                if getattr(status, key) is not None:
-                    self.add_menu_entry(key, attrs['format'])
+            for item in section:
+                if item.dot_notation_key not in self._menu_actions:
+                    self._menu_actions[item.dot_notation_key] = QAction(str(item))
+                    self._menu_actions[item.dot_notation_key].setEnabled(False)
+                else:
+                    self._menu_actions[item.dot_notation_key].setText(str(item))
 
-        for entry in status.__annotations__.keys():
-            if getattr(status, entry) is None:
-                self.remove_menu_entry(entry)
+                self.menu.addAction(self._menu_actions[item.dot_notation_key])
 
         if has_previous_section:
             self.menu.addSeparator()
@@ -154,29 +121,24 @@ class SystrayApp:
         self._device_manager = device_manager
         self._device_status = status
 
-        if len(device_manager.get_configurable_settings(self._device_status).keys()) > 0 and not '_settings' in self.menu_entries:
-            self.menu_entries['_settings'] = QAction(Translations.get_instance().get_translation('app.settings_label'))
-            self.menu_entries['_settings'].triggered.connect(self.open_settings_window)
-            self.menu.addAction(self.menu_entries['_settings'])
+        if len(device_manager.get_configurable_settings(self._device_status).keys()) > 0:
+            if not '_settings' in self._menu_actions:
+                self._menu_actions['_settings'] = QAction(Translations.get_instance().get_translation('app.settings_label'))
+                self._menu_actions['_settings'].triggered.connect(self.open_settings_window)
+            self.menu.addAction(self._menu_actions['_settings'])
 
-    def add_menu_entry(self, entry: str, format: dict[str, Any], callback: Callable[[], None] = None):
-        if entry not in self.menu_entries:
-            self.menu_entries[entry] = QAction('')
-            self.menu_entries[entry].setDisabled(True)
-            if callback is not None:
-                self.menu_entries[entry].triggered.connect(callback)
-            self.menu.addAction(self.menu_entries[entry])
+        # Menu cleanup
+        expected_menu_keys = ['_settings', *[t.dot_notation_key for t in menu_sections_flatlist]]
+        for key in self._menu_actions.keys():
+            if key not in expected_menu_keys:
+                self.menu.removeAction(self._menu_actions[key])
+                del self._menu_actions[key]
 
-        self.menu_entries[entry].setText(Translations.get_instance().get_translation('menu', entry).format(**format))
-
-    def remove_menu_entry(self, entry: str):
-        if entry in self.menu_entries:
-            self.menu.removeAction(self.menu_entries[entry])
-            del self.menu_entries[entry]
+        # Update values in (opened) settings window
+        if hasattr(self, '_settings_window'):
+            self._settings_window.update_status(self._device_status)
 
     def open_settings_window(self):
-        self._settings_window = SettingsWindow(
-            self._device_manager.get_configurable_settings(self._device_status)
-        )
+        self._settings_window = SettingsWindow(self._device_manager, self._device_status)
 
         self._settings_window.show()
