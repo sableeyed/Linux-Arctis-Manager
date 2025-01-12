@@ -4,6 +4,7 @@ import signal
 import sys
 from typing import Coroutine, Literal
 
+from arctis_manager.dbus_manager import DBusManager
 from arctis_manager.translations import Translations
 
 # Setup the notify logging
@@ -43,14 +44,18 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
 
     log_level = logging.DEBUG if args.verbose else NOTIFY
+
     daemon = ArctisManagerDaemon(log_level=log_level)
     systray_app = SystrayApp(app=app, log_level=log_level)
+    dbus_manager = DBusManager(systray_app)
+
     # Init the translations with the logging level
     i18n = Translations.get_instance(log_level=log_level)
 
     def sigterm_handler(sig=None, frame=None):
         daemon.stop()
         systray_app.stop()
+        dbus_manager.stop()
 
         i18n.debug_hit_cache()
 
@@ -71,7 +76,8 @@ if __name__ == '__main__':
             sigterm_handler()
 
     asyncio.ensure_future(async_exception(systray_app.start(), systray_app.log))
-    asyncio.ensure_future(async_exception(daemon.start('1.5.3'), daemon.log))
+    asyncio.ensure_future(async_exception(dbus_manager.start(), dbus_manager.log))
+    asyncio.ensure_future(async_exception(daemon.start('1.6.0'), daemon.log))
 
     with event_loop:
         event_loop.run_forever()

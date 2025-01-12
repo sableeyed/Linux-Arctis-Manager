@@ -1,0 +1,7 @@
+[Desktop Entry]
+Version=1.0
+Name=Arctis Manager
+Exec=bash -c 'cd {{LIBDIR}} && python3 ./arctis_manager_launcher.py'
+Icon=arctis_manager
+Terminal=false
+Type=Application
