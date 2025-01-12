@@ -139,6 +139,11 @@ class SystrayApp:
             self._settings_window.update_status(self._device_status)
 
     def open_settings_window(self):
+        if hasattr(self, '_settings_window') and self._settings_window.isVisible():
+            self._settings_window.raise_()
+            return
+
         self._settings_window = SettingsWindow(self._device_manager, self._device_status)
+        self._settings_window.setWindowFlags(Qt.WindowType.Window)
 
         self._settings_window.show()

@@ -77,7 +77,7 @@ if __name__ == '__main__':
 
     asyncio.ensure_future(async_exception(systray_app.start(), systray_app.log))
     asyncio.ensure_future(async_exception(dbus_manager.start(), dbus_manager.log))
-    asyncio.ensure_future(async_exception(daemon.start('1.6.0'), daemon.log))
+    asyncio.ensure_future(async_exception(daemon.start('1.6.1'), daemon.log))
 
     with event_loop:
         event_loop.run_forever()

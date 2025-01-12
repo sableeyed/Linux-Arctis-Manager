@@ -1,7 +1,7 @@
 from typing import Callable, Optional
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QIcon
+from PyQt6.QtGui import QIcon, QCloseEvent
 from PyQt6.QtWidgets import (QFormLayout, QHBoxLayout, QLabel, QLayout,
                              QListWidget, QMainWindow, QSlider, QStackedWidget,
                              QVBoxLayout, QWidget)
@@ -16,11 +16,11 @@ from arctis_manager.qt_utils import get_icon_pixmap
 from arctis_manager.translations import Translations
 
 
-class SettingsWindow(QMainWindow):
+class SettingsWindow(QWidget):
     manager: DeviceManager
 
-    def __init__(self, manager: DeviceManager, status: DeviceStatus):
-        super().__init__()
+    def __init__(self, manager: DeviceManager, status: DeviceStatus, parent: QWidget = None):
+        super().__init__(parent=parent)
 
         self.manager = manager
 
@@ -120,9 +120,7 @@ class SettingsWindow(QMainWindow):
         # Add widgets to the layout
         main_layout.addWidget(device_name_label)
         main_layout.addWidget(body_widget)
-        main_widget.setLayout(main_layout)
-
-        self.setCentralWidget(main_widget)
+        self.setLayout(main_layout)
 
     def update_status(self, status: DeviceStatus):
         layout = self._status_panel.layout()
@@ -145,7 +143,7 @@ class SettingsWindow(QMainWindow):
 
     def change_panel(self, index):
         # Change the panel based on the selected section
-        self.centralWidget().findChild(QStackedWidget).setCurrentIndex(index)
+        self.findChild(QStackedWidget).setCurrentIndex(index)
 
     def get_slider_configuration_widget(
         self, min: int, max: int, step: int, default_value: int, min_label: str, max_label: str, on_value_changed: Optional[Callable[[int], None]]
@@ -185,3 +183,7 @@ class SettingsWindow(QMainWindow):
             controller.stateChanged.connect(lambda: on_value_changed(controller.isChecked()))
 
         return layout
+
+    def closeEvent(self, event: Optional[QCloseEvent]):
+        self.hide()
+        event.ignore()
