@@ -16,9 +16,8 @@ Requires:       bash, python3 >= 3.9, pulseaudio-utils
 SteelSeries GG software replacement to manage standard and advanced Arctis devices features, like ChatMix, ANC, wireless mode etc.
 
 %prep
-echo $(pwd)
-wget https://github.com/elegos/Linux-Arctis-Manager/archive/refs/tags/v%{version}.zip -O v%{version}.zip
-unzip v%{version}.zip
+wget https://github.com/elegos/Linux-Arctis-Manager/archive/refs/tags/v%{version}.zip -O %{_sourcedir}/v%{version}.zip
+unzip %{_sourcedir}/v%{version}.zip
 mv Linux-Arctis-Manager-%{version}/* .
 rm -rf Linux-Arctis-Manager-%{version}
 
