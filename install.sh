@@ -24,7 +24,8 @@ icon_file="arctis_manager/images/steelseries_logo.svg"
 applications_dir="${chroot_path}${install_prefix}/share/applications/"
 icons_dir="${chroot_path}/usr/share/icons/hicolor/scalable/apps/"
 bin_dir="${chroot_path}${install_prefix}/bin"
-lib_dir="${chroot_path}${install_prefix}/lib/arctis-manager"
+unchrooted_lib_dir="${install_prefix}/lib/arctis-manager"
+lib_dir="${chroot_path}${unchrooted_lib_dir}"
 udev_dir="${chroot_path}/usr/lib/udev/rules.d/"
 systemd_dir="${chroot_path}/usr/lib/systemd/user/"
 
@@ -50,14 +51,14 @@ function install() {
         superuserdo cp "${file}" "${dest_file}"
 
         # Replace placeholders
-        superuserdo sed -i "s|{{LIBDIR}}|${lib_dir}|g" "${dest_file}"
+        superuserdo sed -i "s|{{LIBDIR}}|${unchrooted_lib_dir}|g" "${dest_file}"
     done
 
     echo "Installing desktop file in ${applications_dir}"
     dest_file="${applications_dir}/$(basename "${desktop_file}")"
     superuserdo cp "${desktop_file}" "${dest_file}"
     # Replace placeholders
-    superuserdo sed -i "s|{{LIBDIR}}|${lib_dir}|g" "${dest_file}"
+    superuserdo sed -i "s|{{LIBDIR}}|${unchrooted_lib_dir}|g" "${dest_file}"
 
     echo "Installing icon file in ${icons_dir}"
     dest_file="${icons_dir}/arctis_manager.svg"
