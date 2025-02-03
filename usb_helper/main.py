@@ -1,10 +1,11 @@
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import logging
 from pathlib import Path
 import re
 import subprocess
+from typing import Optional
 import pyuac
 
 from tshark_packet import TSharkPacket
@@ -83,7 +84,7 @@ async def detect_init_packets(usbpcap_devices: list[str], devices_ignore_list: l
 
     print('The application will now try to detect device initialization traffic.')
     print('')
-    print('ATTACH YOUR DEVICE ONLY WHEN YOU HIT ENTER!')
+    print('ATTACH YOUR DEVICE ONLY WHEN YOU HIT ENTER AND SEE "Capturing on \'USBPcap*\' MESSAGES!')
     print('')
     input('Please press [Enter] to continue, then connect the Arctis device. This will take 20 seconds.')
     logging.debug('Creating listening tasks to detect init traffic...')
@@ -127,6 +128,37 @@ async def detect_init_packets(usbpcap_devices: list[str], devices_ignore_list: l
 
     return init_packets
 
+async def detect_packets_and_return_packets(device: Optional[str], interfaces: list[str]) -> list[TSharkPacket]:
+    tasks = []
+    packets: list[TSharkPacket] = []
+
+    def store_packet(packet_data: dict):
+        packet = TSharkPacket(**packet_data['_source']['layers'])
+
+        if device and (packet.usb.source == device or packet.usb.dest == device):
+            print(f'{device} - {packet.usb.source} -> {packet.usb.dest}', flush=True)
+            packets.append(packet)
+
+    if device:
+        dev_interface = re.compile(r'(\d+).\d+.\d+').match(device)[1]
+        interfaces = [f'USBPcap{dev_interface}']
+    tasks = [asyncio.create_task(read_consumer(read_usbpcap_device(dev), store_packet)) for dev in interfaces]
+
+    while True:
+        if len(packets) > 0 and (packets[-1].timestamp + timedelta(seconds=5)) < datetime.now():
+            break
+
+        print('.', end='', flush=True)
+        await asyncio.sleep(1)
+    print('', flush=True)
+
+    for task in tasks:
+        task.cancel()
+
+    await asyncio.gather(*tasks, return_exceptions=True)
+
+    return packets
+
 async def main():
     target_device: str = None
     init_packets: list[TSharkPacket] = []
@@ -142,8 +174,9 @@ async def main():
     # NOTE: if put in a dedicated async function, it will freeze for some reason!
 
     print('')    
-    print('If the Arctis device is connected, please disconnect it now.')
+    print('IF THE ARCTIS DEVICE IS CONNECTED, PLEASE DISCONNECT IT NOW.')
     print('If possible, detach any other USB devices not strictly needed (like keyboard and mouse).')
+    print('')
     input('Press [Enter] to continue...')
 
     print('')
@@ -187,6 +220,34 @@ async def main():
     if target_device is None:
         print('No device detected. Continuing with program (the device might not need initialization).')
         print('')
+    
+    print('The application will now attempt to capture the USB traffic specific for settings change.')
+    print('')
+    
+    print('Open the GG software -> Engine -> [your device] and go under the device settings.')
+    print('For each setting, name it here in the console, then change it and click on the save button.')
+    print('After saving it, name the setting value in the console, then repeat the process for all possible values of the same setting.')
+    print('')
+    print('In any case, follow the instructions on-screen.')
+    print('')
+    input('Press [Enter] to continue...')
+
+    features = []
+    while func_name := input('Please enter a setting name (or press [Enter] to finish): '):
+        while True:
+            packets = await detect_packets_and_return_packets(target_device, devices)
+            while func_value := input(f'{func_name}: which value have you set (i.e. on/off, 10%, high, low, etc.)? ') == '':
+                pass
+
+            features.append({'function': func_name, 'value_label': func_value, 'packets': packets})
+
+            while (finished := input('Have you tried all possible values of this setting? [Y/n] ').lower()) not in ['y', 'n', '']:
+                pass
+            
+            if finished in ['y', '']:
+                print(features)
+                # TODO save feature info
+                break
 
     input('To be continued...')
 
