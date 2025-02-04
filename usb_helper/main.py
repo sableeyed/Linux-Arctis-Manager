@@ -1,277 +1,148 @@
 import asyncio
 from datetime import datetime, timedelta
-import json
-import logging
-from pathlib import Path
-import re
-import subprocess
-from typing import Optional
+from os import environ
+
 import pyuac
 
+from cli_helpers import print_loading
+from tshark import get_usbpcap_interfaces, read_usbpcap_interface
 from tshark_packet import TSharkPacket
 
-def get_tshark_path() -> Path:
+def print_banner():
+    print('''
+    _          _   _                    _       _                _  __  __         
+   /_\\  _ _ __| |_(_)___  _ __  __ _ __| |_____| |_ ___  ____ _ (_)/ _|/ _|___ _ _ 
+  / _ \\| '_/ _|  _| (_-< | '_ \\/ _` / _| / / -_)  _(_-< (_-< ' \\| |  _|  _/ -_) '_|
+ /_/ \\_\\_| \\__|\\__|_/__/ | .__/\\__,_\\__|_\\_\\___|\\__/__/ /__/_||_|_|_| |_| \\___|_|  
+                         |_|                                                       
+''')
+    print('')
+
+
+def print_step(step: int, message: str):
+    print(f'[{step}] {message}')
+    print('')
+
+def should_break_after_wait(start: datetime, packets: list, wait_from_last_packet_seconds: int, timeout_seconds: int) -> bool:
+    if len(packets) > 0:
+        if (datetime.now() > (packets[-1].timestamp + timedelta(seconds=wait_from_last_packet_seconds))):
+            return True
+    elif (start + timedelta(seconds=timeout_seconds)) < datetime.now():
+        return True
+
+    return False
+
+async def wait_and_cancel_tasks(
+        wait_message: str,
+        start_time: datetime,
+        tasks: list[asyncio.Task],
+        packets: list[TSharkPacket],
+        wait_from_last_packet_seconds: int = 3,
+        timeout_seconds: int = 10
+    ):
+
+    idx = 0
+    while True:
+        idx += 1
+        await print_loading(idx, wait_message)
+        if should_break_after_wait(start_time, packets, wait_from_last_packet_seconds, timeout_seconds):
+            print('')
+            break
+    for task in tasks:
+        task.cancel()
+    
+    await asyncio.gather(*tasks)
+
+async def build_devices_blacklist(usbpcap_interfaces: list[str]) -> list[str]:
+    print('Please disconnect your Arctis device and any other USB device not strictly required.')
+    print('When the application will be ready, press some keyboard keys (i.e. CTRL, ALT or SHIFT) and move your mouse.')
+    print('This will exclude those devices from the next steps.')
+    print('')
+
+    input('Press [Enter] to continue...')
+
+    packets: list[TSharkPacket] = []
+    tasks: list[asyncio.Task] = []
+    for iface in usbpcap_interfaces:
+        tasks.append(asyncio.create_task(
+            read_usbpcap_interface(iface, lambda packet: packets.append(packet), 'frame.protocols contains "usbhid"')
+        ))
+
+    await asyncio.sleep(2)
+    start_time = datetime.now()
+    await wait_and_cancel_tasks('Move your mouse, press some keys then wait...', start_time, tasks, packets, 3)
+    print('')
+    blacklist = []
+    for packet in packets:
+        blacklist.extend([packet.usb.source, packet.usb.dest])
+    blacklist = list(set(blacklist))
     try:
-        via_path = subprocess.check_output(['where', 'tshark'], universal_newlines=True)
-        return Path(via_path)
-    except subprocess.CalledProcessError:
+        blacklist.remove('host')
+    except:
         pass
 
-    via_std_path = Path('C:\\Program Files\\Wireshark\\tshark.exe')
-    if via_std_path.exists():
-        return via_std_path
+    return blacklist
 
-    raise Exception('Could not find tshark')
+async def get_init_packets(usbpcap_interfaces: list[str], blacklist: list[str]) -> list[TSharkPacket]:
+    print('When all the USBPcap interfaces are ready, plug your Arctis device in and wait a couple of seconds.')
+    input('Press [Enter] to continue...')
 
-def get_usbpcap_devices() -> list[str]:
-    tshark_path = get_tshark_path()
-    cmd = subprocess.Popen([tshark_path.name, '-D'], cwd=str(tshark_path.parent), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-    out, err = cmd.communicate()
- 
-    if err:
-        raise Exception(err.decode('utf-8'))
-
-    devices = []
-    name_re = re.compile(r'^.+\((.+)\)$')
-    for line in out.decode('utf-8').split('\n'):
-        if 'USBPcap' in line:
-            devices.append(name_re.match(line.strip())[1])
-    
-    return devices
-
-async def read_usbpcap_device(device: str):
-    tshark = get_tshark_path()
-    json_decoder = json.JSONDecoder()
-
-    process = await asyncio.create_subprocess_exec(str(tshark), '-i', device, '-Y', 'usb.transfer_type == 0x01', '-x', '-T', 'json',
-        stdout=subprocess.PIPE,
-        cwd=str(tshark.parent),
-    )
-
-    buffer = ''
-    try:
-        while buffer.strip() != ']':
-            chunk = await process.stdout.read(4096)
-            if not chunk:
-                continue
-
-            buffer += chunk.decode('utf-8')
-            if buffer[0] in ['[', ',']:
-                buffer = buffer[1:]
-            buffer = buffer.lstrip()
-
-            try:
-                packet_data, idx = json_decoder.raw_decode(buffer)
-                yield packet_data
-
-                buffer = buffer[idx:].lstrip()
-            except json.decoder.JSONDecodeError as ex:
-                # Not enough data (yet)
-                continue
-    finally:
-        process.terminate()
-        await process.wait()
-
-async def read_consumer(generator, callback):
-    async for packet_data in generator:
-        callback(packet_data)
-
-def filter_packets_by_ignore_list(packets: list[TSharkPacket], ignore_list: list[str]):
-    return [packet for packet in packets if packet.usb.source not in ignore_list or packet.usb.dest not in ignore_list]
-
-async def detect_init_packets(usbpcap_devices: list[str], devices_ignore_list: list[str]) -> list[TSharkPacket]:
-    init_packets: list[TSharkPacket] = []
-
-    print('The application will now try to detect device initialization traffic.')
-    print('')
-    print('ATTACH YOUR DEVICE ONLY WHEN YOU HIT ENTER AND SEE "Capturing on \'USBPcap*\' MESSAGES!')
-    print('')
-    input('Please press [Enter] to continue, then connect the Arctis device. This will take 20 seconds.')
-    logging.debug('Creating listening tasks to detect init traffic...')
-    tasks = [asyncio.create_task(read_consumer(
-        read_usbpcap_device(device),
-        lambda packet_data: init_packets.append(TSharkPacket(**packet_data['_source']['layers'])),
-    )) for device in usbpcap_devices]
-    
-    try:
-        await asyncio.sleep(20)
-    except asyncio.CancelledError:
-        print('Listening was cancelled')
-
-    for task in tasks:
-        task.cancel()
-
-    await asyncio.gather(*tasks, return_exceptions=True)
-
-    init_packets = filter_packets_by_ignore_list(init_packets, devices_ignore_list)
-    init_packets = [packet for packet in init_packets if 'usbhid' in packet.frame.protocols]
-
-    print('Detected the following packets:')
-    for packet in init_packets:
-        print(packet)
-    
-    print('')
-    src_packets = list(set([packet.usb.source for packet in init_packets if packet.usb.source != 'host']))
-    if len(src_packets) == 1:
-        target_device = src_packets[0]
-    if len(src_packets) > 1:
-        print('Multiple USB devices found during the initialization phase. Please specify which device to analyze (it will probably the one with the most traffic).')
-        for idx, src in enumerate(src_packets):
-            print(f'{idx+1}. {src}')
-        choice = int(input('Input number: ')) - 1
-        target_device = src_packets[choice]
-        init_packets = [packet for packet in init_packets if packet.usb.source == target_device or packet.usb.dest == target_device]
-
-        for packet in init_packets:
-            print(packet)
-    print('')
-
-    return init_packets
-
-async def detect_packets_and_return_packets(device: Optional[str], interfaces: list[str]) -> list[TSharkPacket]:
-    tasks = []
     packets: list[TSharkPacket] = []
-
-    def store_packet(packet_data: dict):
-        packet = TSharkPacket(**packet_data['_source']['layers'])
-
-        if device and (packet.usb.source == device or packet.usb.dest == device):
-            print(f'{device} - {packet.usb.source} -> {packet.usb.dest}', flush=True)
-            packets.append(packet)
-
-    if device:
-        dev_interface = re.compile(r'(\d+).\d+.\d+').match(device)[1]
-        interfaces = [f'USBPcap{dev_interface}']
-    tasks = [asyncio.create_task(read_consumer(read_usbpcap_device(dev), store_packet)) for dev in interfaces]
-
-    while True:
-        if len(packets) > 0 and (packets[-1].timestamp + timedelta(seconds=5)) < datetime.now():
-            break
-
-        print('.', end='', flush=True)
-        await asyncio.sleep(1)
-    print('', flush=True)
-
-    for task in tasks:
-        task.cancel()
-
-    await asyncio.gather(*tasks, return_exceptions=True)
+    tasks: list[asyncio.Task] = []
+    for iface in usbpcap_interfaces:
+        tasks.append(asyncio.create_task(
+            read_usbpcap_interface(iface, lambda packet: packets.append(packet), 'frame.protocols contains "usbhid"', *[f'usb.addr != {dev}' for dev in blacklist])
+        ))
+    
+    await asyncio.sleep(2)
+    start_time = datetime.now()
+    await wait_and_cancel_tasks('Plug your Arctis device in and wait...', start_time, tasks, packets, 5)
+    print('')
 
     return packets
 
 async def main():
-    target_device: str = None
-    init_packets: list[TSharkPacket] = []
-    devices_ignore_list: list[str] = []
+    print_banner()
 
-    logging.debug('Getting USBPcap devices...')
-    devices = get_usbpcap_devices()
-    if len(devices) == 0:
-        logging.error('No USBPcap devices found. Have you installed the USBPcap driver?')
-        return
-
-    # Devices to ignore.
-    # NOTE: if put in a dedicated async function, it will freeze for some reason!
-
-    print('')    
-    print('IF THE ARCTIS DEVICE IS CONNECTED, PLEASE DISCONNECT IT NOW.')
-    print('If possible, detach any other USB devices not strictly needed (like keyboard and mouse).')
-    print('')
-    input('Press [Enter] to continue...')
-
-    print('')
-    print('The application will try to filter out all current USB traffic.')
-    print('Please use your mouse, keyboard and other USB attached devices.')
-    print('This process will take 10 seconds.')
-    print('')
-    print('DETACH YOUR ARCTIS DEVICE NOW.')
-    print('')
-    input('Press [Enter] to continue...')
-
-    print('')
-    logging.debug('Creating listening tasks to detect USB devices to ignore...')
-    tasks = [asyncio.create_task(read_consumer(
-        read_usbpcap_device(device),
-        lambda packet_data: devices_ignore_list.append(TSharkPacket(**packet_data['_source']['layers']).usb.source),
-    )) for device in devices]
+    print_step(1, 'Getting USBPcap interfaces...')
+    usbpcap_interfaces = get_usbpcap_interfaces()
     
-    try:
-        await asyncio.sleep(10)
-    except asyncio.CancelledError:
-        print('Listening was cancelled')
+    print_step(2, 'Filtering out current USB traffic...')
+    blacklist = await build_devices_blacklist(usbpcap_interfaces)
 
-    for task in tasks:
-        task.cancel()
+    print_step(3, 'Capturing device initialization traffic...')
+    init_packets = await get_init_packets(usbpcap_interfaces, blacklist)
 
-    await asyncio.gather(*tasks, return_exceptions=True)
+    device_src = [p.usb.source for p in init_packets if p.usb.source != 'host']
+    device_dest = [p.usb.dest for p in init_packets if p.usb.dest != 'host']
+    device_id = list(set(device_src + device_dest))
 
-    devices_ignore_list = list(set(devices_ignore_list))
-    try:
-        devices_ignore_list.remove('host')
-    except:
-        pass
-
-    print(f'Detected {len(devices_ignore_list)} devices to ignore: {", ".join(devices_ignore_list)}')
-    print('')
-
-    init_packets = await detect_init_packets(devices, devices_ignore_list)
-    target_device = next((p.usb.dest for p in init_packets if p.usb.dest != 'host'), None)
-
-    if target_device is None:
-        print('No device detected. Continuing with program (the device might not need initialization).')
-        print('')
+    if len(init_packets) > 0:
+        print('Init sequence captured.')
+        for packet in init_packets:
+            print(packet)
+        
+        if len(device_id) > 1:
+            print('Multiple devices detected. Please choose one of the identifiers (the one with the most packets should be the correct one):')
+            src_packets = list(set([packet.usb.source for packet in init_packets if packet.usb.source != 'host']))
+            for idx, src in enumerate(init_packets):
+                print(f'{idx+1}. {src}')
+            choice = int(input('Input number: ')) - 1
+            device_id = src_packets[choice]
+            init_packets = [packet for packet in init_packets if packet.usb.source == device_id or packet.usb.dest == device_id]
+        elif len(device_id) == 1:
+            device_id = device_id[0]
+        else:
+            device_id = None
+    else:
+        print('Cannot detect device initialization traffic. This might not be an error, as the device might not need to be initialized.')
+        if input('Do you want to continue? (Y/n) ').lower() not in ('yes', 'y', ''):
+            return
+        device_id = None
     
-    print('The application will now attempt to capture the USB traffic specific for settings change.')
-    print('')
-    
-    print('Open the GG software -> Engine -> [your device] and go under the device settings.')
-    print('For each setting, name it here in the console, then change it and click on the save button.')
-    print('After saving it, name the setting value in the console, then repeat the process for all possible values of the same setting.')
-    print('')
-    print('In any case, follow the instructions on-screen.')
-    print('')
-    input('Press [Enter] to continue...')
-
-    features = []
-    while func_name := input('Please enter a setting name (or press [Enter] to finish): '):
-        while True:
-            packets = await detect_packets_and_return_packets(target_device, devices)
-            while func_value := input(f'{func_name}: which value have you set (i.e. on/off, 10%, high, low, etc.)? ') == '':
-                pass
-
-            features.append({'function': func_name, 'value_label': func_value, 'packets': packets})
-
-            while (finished := input('Have you tried all possible values of this setting? [Y/n] ').lower()) not in ['y', 'n', '']:
-                pass
-            
-            if finished in ['y', '']:
-                print(features)
-                # TODO save feature info
-                break
-
-    input('To be continued...')
-
-async def run():
-    try:
-        await main()
-    except asyncio.CancelledError:
-        logging.debug('Program cancelled and succesfully closed.')
-    except KeyboardInterrupt:
-        logging.debug('Program exiting due to user input.')
-    finally:
-        logging.debug('Program exited.')
-
 if __name__ == '__main__':
     if not pyuac.isUserAdmin():
         print('Run this program with admin privileges.')
         pyuac.runAsAdmin()
     else:
-        logging.basicConfig(
-            level=logging.INFO,
-            format='%(asctime)s - %(levelname)s - %(message)s',
-            handlers=[logging.StreamHandler()],
-        )
-        try:
-            asyncio.run(run())
-        except KeyboardInterrupt:
-            logging.debug('Program exiting due to user input.')
+        asyncio.run(main())
