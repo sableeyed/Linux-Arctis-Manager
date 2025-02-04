@@ -53,6 +53,21 @@ async def wait_and_cancel_tasks(
     
     await asyncio.gather(*tasks)
 
+async def capture_packets(usbpcap_interfaces: list[str], wait_message: str, timeout: int, hard_timeout: int, *filters: list[str]) -> list[TSharkPacket]:
+    packets: list[TSharkPacket] = []
+    tasks: list[asyncio.Task] = []
+    for iface in usbpcap_interfaces:
+        tasks.append(asyncio.create_task(
+            read_usbpcap_interface(iface, lambda packet: packets.append(packet), 'frame.protocols contains "usbhid"', *filters)
+        ))
+    
+    await asyncio.sleep(2)
+    start_time = datetime.now()
+    await wait_and_cancel_tasks(wait_message, start_time, tasks, packets, timeout, hard_timeout)
+    print('')
+
+    return packets
+
 async def build_devices_blacklist(usbpcap_interfaces: list[str]) -> list[str]:
     print('Please disconnect your Arctis device and any other USB device not strictly required.')
     print('When the application will be ready, press some keyboard keys (i.e. CTRL, ALT or SHIFT) and move your mouse.')
@@ -61,17 +76,8 @@ async def build_devices_blacklist(usbpcap_interfaces: list[str]) -> list[str]:
 
     input('Press [Enter] to continue...')
 
-    packets: list[TSharkPacket] = []
-    tasks: list[asyncio.Task] = []
-    for iface in usbpcap_interfaces:
-        tasks.append(asyncio.create_task(
-            read_usbpcap_interface(iface, lambda packet: packets.append(packet), 'frame.protocols contains "usbhid"')
-        ))
+    packets = await capture_packets(usbpcap_interfaces, 'Move your mouse, press some keys then wait...', 3, 10)
 
-    await asyncio.sleep(2)
-    start_time = datetime.now()
-    await wait_and_cancel_tasks('Move your mouse, press some keys then wait...', start_time, tasks, packets, 3)
-    print('')
     blacklist = []
     for packet in packets:
         blacklist.extend([packet.usb.source, packet.usb.dest])
@@ -87,17 +93,12 @@ async def get_init_packets(usbpcap_interfaces: list[str], blacklist: list[str]) 
     print('When all the USBPcap interfaces are ready, plug your Arctis device in and wait a couple of seconds.')
     input('Press [Enter] to continue...')
 
-    packets: list[TSharkPacket] = []
-    tasks: list[asyncio.Task] = []
-    for iface in usbpcap_interfaces:
-        tasks.append(asyncio.create_task(
-            read_usbpcap_interface(iface, lambda packet: packets.append(packet), 'frame.protocols contains "usbhid"', *[f'usb.addr != {dev}' for dev in blacklist])
-        ))
-    
-    await asyncio.sleep(2)
-    start_time = datetime.now()
-    await wait_and_cancel_tasks('Plug your Arctis device in and wait...', start_time, tasks, packets, 5)
-    print('')
+    packets = await capture_packets(
+        usbpcap_interfaces,
+        'Plug your Arctis device in and wait...',
+        5, 15,
+        *[f'usb.addr != {dev}' for dev in blacklist]
+    )
 
     return packets
 
