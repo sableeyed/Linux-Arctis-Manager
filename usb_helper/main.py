@@ -1,11 +1,14 @@
 import asyncio
 from datetime import datetime, timedelta
 from os import environ
+from pathlib import Path
+from typing import Optional
 
 import pyuac
 
 from asyncio_helpers import Waiter
 from cli_helpers import print_loading
+from models import Feature, FeatureValue
 from tshark import get_usbpcap_interfaces, read_usbpcap_interface
 from tshark_packet import TSharkPacket
 
@@ -107,6 +110,73 @@ async def get_init_packets(usbpcap_interfaces: list[str], blacklist: list[str]) 
 
     return packets
 
+async def get_features_set(usbpcap_interfaces: list[str], device_id: Optional[str], features: list[Feature] = []) -> list[Feature]:
+    if not features:
+        print('In this part, the application will attempt to detect the configuration packets sent by the GG software.')
+        print('First of all, open the SteelSeries GG software, enter the Engine section and then the Arctis device\'s settings.')
+        print('Remember to try the physical wheels, too (like the volume up / down (down to minimum, up to maximum etc).)')
+        print('')
+        input('Press [Enter] to continue...')
+    
+    while (feature_name := input('Enter the name of the feature (e.g. "Microphone volume"): ')) == '':
+        pass
+
+    filters = []
+    if device_id:
+        filters.append(f'usb.addr == {device_id}')
+    
+    feature = next((f for f in features if f.name == feature_name), None)
+    if feature is None:
+        feature = Feature(feature_name, [])
+        features.append(feature)
+
+    while True:
+        packets = await capture_packets(
+            usbpcap_interfaces, f'Change the "{feature_name}" value and hit the "Save" button, then wait...',
+            5, 15,
+            *filters
+        )
+
+        if not packets:
+            if input('No packets captured. Do you want to try again? (Y/n): ').lower() in ['n', 'no']:
+                break
+            else:
+                continue
+        
+        while (value := input('Insert the value you set (for example 0%, on, off, enabled, disabled, high, medium, low, ...): ')) == '':
+            pass
+                
+        feature.values.append(FeatureValue(value, packets))
+
+        print(f'Catalogued values for this feature are: {", ".join([fv.value for fv in feature.values])}.')
+        if input('Do you have any other value for this feature you want to catalog? (y/N): ').lower() in ['n', 'no', '']:
+            break
+    
+    if input('Do you have any other feature you want to catalog? (y/N): ').lower() in ['n', 'no', '']:
+        return features
+    
+    return await get_features_set(usbpcap_interfaces, device_id, features)
+
+def markdown_page(device_name: str, init_packets: list[TSharkPacket], features: list[Feature]) -> str:
+    md = f'# {device_name}\n\n'
+    md += '## Initialization sequence\n\n'
+    md += '| Datetime | Source | Destination | Data Length | Payload |\n'
+    md += '|---------|--------|-------------|-------------|---------|\n'
+    for packet in init_packets:
+        md += f'| {packet.timestamp} | {packet.usb.source} | {packet.usb.dest} | {packet.usb.data_length} | {packet.hid_data} |\n'
+    md += '\n'
+    md += '## Features\n\n'
+    for feature in features:
+        md += f'### {feature.name}\n\n'
+        md += '| Value | Packet #n | Datetime | Source | Dest | Payload |\n'
+        md += '|-------|-----------|-----------|--------|------|---------|\n'
+        for value in feature.values:
+            for i, packet in enumerate(value.packets[1:]):
+                md += f'| {value.value} | {i + 1} | {packet.timestamp} | {packet.usb.source} | {packet.usb.dest} | {packet.hid_data} |\n'
+        md += '\n'
+    
+    return md
+
 async def main():
     print_banner()
 
@@ -124,9 +194,7 @@ async def main():
     device_id = list(set(device_src + device_dest))
 
     if len(init_packets) > 0:
-        print('Init sequence captured.')
-        for packet in init_packets:
-            print(packet)
+        print(f'Init sequence captured ({len(init_packets)} packets).')
         
         if len(device_id) > 1:
             print('Multiple devices detected. Please choose one of the identifiers (the one with the most packets should be the correct one):')
@@ -145,6 +213,18 @@ async def main():
         if input('Do you want to continue? (Y/n) ').lower() not in ('yes', 'y', ''):
             return
         device_id = None
+    
+    print_step(4, 'Device-specific setting configurations.')
+    features = await get_features_set(usbpcap_interfaces, device_id)
+
+    device_name = input('Enter the device name (e.g. "Arctis 7"): ')
+
+    output_path = Path(f'{device_name}_{datetime.now().strftime('%Y_%m_%d_%H_%M')}.md')
+    with output_path.open('w') as f:
+        f.write(markdown_page(device_name, init_packets, features))
+        print(f'Data exported to "{output_path.absolute()}".')
+
+    input('Press [Enter] to close.')
     
 if __name__ == '__main__':
     if not pyuac.isUserAdmin():
