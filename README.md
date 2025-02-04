@@ -82,7 +82,9 @@ Important notes:
 
 ### Need help on reverse engineering?
 
-Try looking at the [wireshark guide](docs/WIRESHARK.md)!
+First try the [(Windows) USB analyzer guide](docs/USB_ANALYZER.md)!
+
+Then try looking at the [wireshark guide](docs/WIRESHARK.md)!
 
 ### Do I need to override the `DeviceManager.init_device` for my new device?
 
