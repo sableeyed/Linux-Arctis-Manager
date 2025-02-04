@@ -4,6 +4,7 @@ from os import environ
 
 import pyuac
 
+from asyncio_helpers import Waiter
 from cli_helpers import print_loading
 from tshark import get_usbpcap_interfaces, read_usbpcap_interface
 from tshark_packet import TSharkPacket
@@ -56,12 +57,16 @@ async def wait_and_cancel_tasks(
 async def capture_packets(usbpcap_interfaces: list[str], wait_message: str, timeout: int, hard_timeout: int, *filters: list[str]) -> list[TSharkPacket]:
     packets: list[TSharkPacket] = []
     tasks: list[asyncio.Task] = []
+    waiters: list[Waiter] = []
     for iface in usbpcap_interfaces:
+        waiters.append(Waiter())
         tasks.append(asyncio.create_task(
-            read_usbpcap_interface(iface, lambda packet: packets.append(packet), 'frame.protocols contains "usbhid"', *filters)
+            read_usbpcap_interface(iface, lambda packet: packets.append(packet), 'frame.protocols contains "usbhid"', *filters, waiter=waiters[-1])
         ))
     
-    await asyncio.sleep(2)
+    for waiter in waiters:
+        await waiter
+
     start_time = datetime.now()
     await wait_and_cancel_tasks(wait_message, start_time, tasks, packets, timeout, hard_timeout)
     print('')

@@ -5,8 +5,9 @@ import os
 from pathlib import Path
 import re
 import subprocess
-from typing import AsyncGenerator, Callable
+from typing import AsyncGenerator, Callable, Optional
 
+from asyncio_helpers import Waiter
 from cli_helpers import print_loading
 from tshark_packet import TSharkPacket
 
@@ -40,11 +41,11 @@ def get_usbpcap_interfaces() -> list[str]:
     
     return devices
 
-async def read_usbpcap_interface(interface: str, callback: Callable[[TSharkPacket], None], *filters: list[str]) -> None:
-    async for packet in read_usbpcap_interface_generator(interface, *filters):
+async def read_usbpcap_interface(interface: str, callback: Callable[[TSharkPacket], None], *filters: list[str], waiter: Optional[Waiter] = None) -> None:
+    async for packet in read_usbpcap_interface_generator(interface, *filters, waiter=waiter):
         callback(packet)
 
-async def read_usbpcap_interface_generator(interface: str, *filters: list[str]) -> AsyncGenerator[TSharkPacket, None]:
+async def read_usbpcap_interface_generator(interface: str, *filters: list[str], waiter: Optional[Waiter] = None) -> AsyncGenerator[TSharkPacket, None]:
     tshark = get_tshark_path()
     json_decoder = json.JSONDecoder()
 
@@ -71,7 +72,10 @@ async def read_usbpcap_interface_generator(interface: str, *filters: list[str]) 
         idx += 1
     
     print(f'Capturing on {interface}')
-    
+
+    if waiter:
+        waiter.set() 
+   
     try:
         buffer = ''
         while buffer.strip() != ']':
