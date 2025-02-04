@@ -214,6 +214,9 @@ async def main():
             return
         device_id = None
     
+    if device_id is not None:
+        print(f'Detected device ID: {device_id} (you can use this as a Wireshark filter: usb.addr == "{device_id}").')
+
     print_step(4, 'Device-specific setting configurations.')
     features = await get_features_set(usbpcap_interfaces, device_id)
 
