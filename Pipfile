@@ -10,6 +10,7 @@ qasync = "==0.27.1"
 dbus-next = "==0.2.3"
 
 [dev-packages]
+pyinstaller = "*"
 
 [requires]
 python_version = "3.13"

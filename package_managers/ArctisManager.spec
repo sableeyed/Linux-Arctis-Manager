@@ -39,11 +39,11 @@ export PREFIX="/usr/local"
 bash install.sh
 
 %files
-/usr/local/share/applications/ArctisManager.desktop
-/usr/local/bin/arctis-manager
-/usr/local/lib/arctis-manager/*
 /usr/lib/udev/rules.d/91-steelseries-arctis.rules
 /usr/lib/systemd/user/arctis-manager.service
+/usr/local/bin/arctis-manager
+/usr/local/bin/arctis-manager-launcher
+/usr/local/share/applications/ArctisManager.desktop
 /usr/share/icons/hicolor/scalable/apps/arctis_manager.svg
 
 %changelog

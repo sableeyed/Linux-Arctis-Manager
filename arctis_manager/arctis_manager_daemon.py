@@ -2,6 +2,7 @@ import asyncio
 import inspect
 import logging
 import os
+from pathlib import Path
 import pkgutil
 import re
 import subprocess
@@ -11,6 +12,7 @@ from typing import Callable
 import usb.core
 
 from arctis_manager.device_manager import DeviceManager, DeviceStatus, InterfaceEndpoint
+import arctis_manager.devices
 
 PA_GAME_NODE_NAME = 'Arctis_Game'
 PA_CHAT_NODE_NAME = 'Arctis_Chat'
@@ -54,7 +56,7 @@ class ArctisManagerDaemon:
         registered_devices = []
 
         # Dynamically instantiate the device managers
-        for _, name, _ in pkgutil.iter_modules(['arctis_manager/devices']):
+        for _, name, _ in pkgutil.iter_modules(arctis_manager.devices.__path__):
             module = __import__(f'arctis_manager.devices.{name}', fromlist=[name])
             for _, cls in inspect.getmembers(module, inspect.isclass):
                 if issubclass(cls, DeviceManager) and cls is not DeviceManager:
@@ -239,7 +241,7 @@ class ArctisManagerDaemon:
 
             self.log.debug('Starting main loop.')
 
-    @ staticmethod
+    @staticmethod
     def _normalize_audio(volume, mix):
         return int(round((volume * mix) * 100, 0))
 

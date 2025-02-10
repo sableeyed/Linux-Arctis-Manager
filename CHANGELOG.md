@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.2]
+
+### Added
+
+- PyInstaller dev dependency to handle pip dependencies
+- PyInstaller spec files for both binaries (arctis manager desktop app launcher and daemon)
+- VSCode RPM build task
+
+### Changed
+
+- Installer now bundles everything into fewer binary files, instead of installing dependencies in the lib folder
+
+### Fixed
+
+- RPM build
+
 ## [1.6.1]
 
 ### Fixed

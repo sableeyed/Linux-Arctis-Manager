@@ -8,8 +8,8 @@
             "args": [
                 "-ba",
                 "${workspaceFolder}/package_managers/ArctisManager.spec",
-                "--define", "_version 1.6.1",
-                "--define", "_release 2",
+                "--define", "_version 1.6.2",
+                "--define", "_release 1",
                 "--define", "_localbuild 1",
                 "--define", "_sourcedir ${workspaceFolder}"
             ],
