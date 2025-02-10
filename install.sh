@@ -24,8 +24,8 @@ icon_file="arctis_manager/images/steelseries_logo.svg"
 applications_dir="${chroot_path}${install_prefix}/share/applications/"
 icons_dir="${chroot_path}/usr/share/icons/hicolor/scalable/apps/"
 bin_dir="${chroot_path}${install_prefix}/bin"
-unchrooted_lib_dir="${install_prefix}/lib/arctis-manager"
-lib_dir="${chroot_path}${unchrooted_lib_dir}"
+lib_dir="${install_prefix}/lib/arctis-manager"
+chrooted_lib_dir="${chroot_path}${lib_dir}"
 udev_dir="${chroot_path}/usr/lib/udev/rules.d/"
 systemd_dir="${chroot_path}/usr/lib/systemd/user/"
 
@@ -41,7 +41,7 @@ function install() {
     echo "Installing Arctis Manager..."
 
     superuserdo mkdir -p "${bin_dir}"
-    superuserdo mkdir -p "${lib_dir}"
+    superuserdo mkdir -p "${chrooted_lib_dir}"
     superuserdo mkdir -p "${applications_dir}"
     superuserdo mkdir -p "${icons_dir}"
 
@@ -51,32 +51,48 @@ function install() {
         superuserdo cp "${file}" "${dest_file}"
 
         # Replace placeholders
-        superuserdo sed -i "s|{{LIBDIR}}|${unchrooted_lib_dir}|g" "${dest_file}"
+        superuserdo sed -i "s|{{LIBDIR}}|${lib_dir}|g" "${dest_file}"
     done
 
     echo "Installing desktop file in ${applications_dir}"
     dest_file="${applications_dir}/$(basename "${desktop_file}")"
     superuserdo cp "${desktop_file}" "${dest_file}"
     # Replace placeholders
-    superuserdo sed -i "s|{{LIBDIR}}|${unchrooted_lib_dir}|g" "${dest_file}"
+    superuserdo sed -i "s|{{LIBDIR}}|${lib_dir}|g" "${dest_file}"
 
     echo "Installing icon file in ${icons_dir}"
     dest_file="${icons_dir}/arctis_manager.svg"
     superuserdo cp "${icon_file}" "${dest_file}"
 
-    echo "Installing application data in ${lib_dir}"
+    echo "Installing application data in ${chrooted_lib_dir}"
     for file in "${lib_files_and_dirs[@]}"; do
         if [ -f "${file}" ]; then
-            superuserdo cp "${file}" "${lib_dir}/"
+            superuserdo cp "${file}" "${chrooted_lib_dir}/"
         elif [ -d "${file}" ]; then
-            superuserdo cp -r "${file}" "${lib_dir}/"
+            superuserdo cp -r "${file}" "${chrooted_lib_dir}/"
         fi
     done
 
     # Note: using superuserdo with pip to install modules
     # It is harmless, as it will target a custom folder
-    echo "Installing python dependencies in ${lib_dir}"
-    superuserdo python3 -m pip install --upgrade --quiet --root-user-action=ignore -r requirements.txt --target "${lib_dir}"
+    echo "Installing python dependencies in ${chrooted_lib_dir}"
+    echo "pip configuration:"
+    if [ -n "${chroot_path}" ]; then
+        printf "\troot: %s\n" "${chroot_path}"
+        printf "\tprefix: %s\n" "${lib_dir}"
+        superuserdo python3 -m pip install \
+            --upgrade --quiet --root-user-action=ignore \
+            --config-settings="--install-scripts=${bin_dir}" \
+            -r requirements.txt \
+            --no-binary 'pylupdate6' \
+            --root "${chroot_path}" --prefix "${lib_dir}"
+        
+    else
+        printf "\ttarget: %s\n" "${lib_dir}"
+        superuserdo python3 -m pip install --upgrade --quiet --root-user-action=ignore -r requirements.txt --target "${lib_dir}"
+    fi
+
+    superuserdo find "${chroot_path}${lib_dir}" -name "__pycache__" -exec rm -rf {} \;
 
     # Udev rules
     echo "Installing udev rules."

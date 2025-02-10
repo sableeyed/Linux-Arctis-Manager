@@ -3,5 +3,8 @@
         "editor.defaultFormatter": "ms-python.autopep8",
         "editor.formatOnSave": true
     },
-    "files.insertFinalNewline": true
+    "files.insertFinalNewline": true,
+
+    "python.terminal.activateEnvironment": false,
+    "python.terminal.activateEnvInCurrentTerminal": false
 }

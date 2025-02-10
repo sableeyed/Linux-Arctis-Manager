@@ -1,12 +1,11 @@
 Name:           arctis-manager
 Version:        %{_version}
-Release:        1%{?dist}
+Release:        %{?_release}%{!?_release:1}%{?dist}
 Summary:        SteelSeries GG software replacement for Linux to manage Arctis devices
 
 License:        GPL-3.0
 URL:            https://github.com/elegos/Linux-Arctis-Manager
-Source0:        https://github.com/elegos/Linux-Arctis-Manager/archive/refs/tags/v%{version}.zip
-BuildArch:      x86_64
+ExclusiveArch:      x86_64
 
 # Dipendenze richieste per il pacchetto
 BuildRequires:  bash, wget
@@ -16,10 +15,15 @@ Requires:       bash, python3 >= 3.9, pulseaudio-utils
 SteelSeries GG software replacement to manage standard and advanced Arctis devices features, like ChatMix, ANC, wireless mode etc.
 
 %prep
-wget https://github.com/elegos/Linux-Arctis-Manager/archive/refs/tags/v%{version}.zip -O %{_sourcedir}/v%{version}.zip
-unzip %{_sourcedir}/v%{version}.zip
-mv Linux-Arctis-Manager-%{version}/* .
-rm -rf Linux-Arctis-Manager-%{version}
+%if %{defined _localbuild}
+    echo "Skipping src download (local build)"
+    cp -r %{_sourcedir}/* .
+%else
+    wget https://github.com/elegos/Linux-Arctis-Manager/archive/refs/tags/v%{version}.zip -O %{_sourcedir}/v%{version}.zip
+    unzip %{_sourcedir}/v%{version}.zip
+    mv Linux-Arctis-Manager-%{version}/* .
+    rm -rf Linux-Arctis-Manager-%{version}
+%endif
 
 %build
 # Nothing to do here
@@ -37,7 +41,7 @@ bash install.sh
 %files
 /usr/local/share/applications/ArctisManager.desktop
 /usr/local/bin/arctis-manager
-/usr/local/lib/arctis-manager
+/usr/local/lib/arctis-manager/*
 /usr/lib/udev/rules.d/91-steelseries-arctis.rules
 /usr/lib/systemd/user/arctis-manager.service
 /usr/share/icons/hicolor/scalable/apps/arctis_manager.svg
