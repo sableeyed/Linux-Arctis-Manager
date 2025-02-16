@@ -4,4 +4,4 @@ dist/
 include/
 lib/
 lib64
-pyvenv.cfg
+package_managers/rpm/

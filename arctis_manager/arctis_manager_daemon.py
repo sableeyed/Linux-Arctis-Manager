@@ -105,7 +105,7 @@ class ArctisManagerDaemon:
             default_sink = arctis_device
         except Exception as e:
             self.log.error('Failed to get default sink.', exc_info=True)
-            sys.exit(2)
+            sys.exit(102)
 
         # Create the game and chat nodes
         self.log.info('Creating PulseAudio Audio/Sink nodes.')
@@ -133,7 +133,7 @@ class ArctisManagerDaemon:
             """)
         except Exception as e:
             self.log.error('Failed to create PulseAudio nodes.', exc_info=True)
-            sys.exit(3)
+            sys.exit(103)
 
         self.log.info('Setting PulseAudio channel links.')
         for node in [PA_GAME_NODE_NAME, PA_CHAT_NODE_NAME]:
@@ -144,7 +144,7 @@ class ArctisManagerDaemon:
                     os.system(f'pw-link "{node}:monitor_{pos_name}" "{default_sink}:playback_{pos_name}" 1>/dev/null')
             except Exception as e:
                 self.log.error(f'Failed to set {node}\'s audio positions.', exc_info=True)
-                sys.exit(4)
+                sys.exit(104)
 
     def set_default_audio_sink(self) -> None:
         self.log.info(f'Setting PulseAudio\'s default sink to {PA_GAME_NODE_NAME}.')
@@ -210,14 +210,15 @@ class ArctisManagerDaemon:
                     self.device_manager.kernel_detach()
                     self.log.info(f'Identified device: {self.device_manager.get_device_name()}.')
                     break
-            finally:
-                pass
+            except Exception as e:
+                self.log.error(f'Failed to identify device: {manager.get_device_name()} ({e}).')
+                self.device = None
 
         if self.device is None:
             self.log.error(f'''Failed to identify the Arctis device. Please ensure it is connected.
                            Compatible devices are: {', '.join([d.get_device_name() for d in self.device_managers])}''')
 
-            sys.exit(1)
+            sys.exit(101)
 
         self.log.debug('Initializing device.')
         for interface_endpoint in self.device_manager.get_endpoint_addresses_to_listen():

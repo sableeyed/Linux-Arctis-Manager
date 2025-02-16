@@ -36,6 +36,7 @@ if __name__ == '__main__':
 
     args = ArgumentParser()
     args.add_argument('-v', '--verbose', action='count', default=0)
+    args.add_argument('--daemon-only', action='store_true')
     args = args.parse_args()
 
     logging.basicConfig(level=logging.CRITICAL, format='%(name)20s %(levelname)8s | %(message)s')
@@ -46,23 +47,26 @@ if __name__ == '__main__':
     log_level = logging.DEBUG if args.verbose else NOTIFY
 
     daemon = ArctisManagerDaemon(log_level=log_level)
-    systray_app = SystrayApp(app=app, log_level=log_level)
-    dbus_manager = DBusManager(systray_app)
+    if not args.daemon_only:
+        systray_app = SystrayApp(app=app, log_level=log_level)
+        dbus_manager = DBusManager(systray_app)
 
     # Init the translations with the logging level
     i18n = Translations.get_instance(log_level=log_level)
 
     def sigterm_handler(sig=None, frame=None):
         daemon.stop()
-        systray_app.stop()
-        dbus_manager.stop()
+        if not args.daemon_only:
+            systray_app.stop()
+            dbus_manager.stop()
 
         i18n.debug_hit_cache()
 
     signal.signal(signal.SIGINT, sigterm_handler)
     signal.signal(signal.SIGTERM, sigterm_handler)
 
-    daemon.register_device_change_callback(systray_app.on_device_status_update)
+    if not args.daemon_only:
+        daemon.register_device_change_callback(systray_app.on_device_status_update)
     daemon.register_shutdown_callback(sigterm_handler)
 
     event_loop = QEventLoop(app)
@@ -75,8 +79,9 @@ if __name__ == '__main__':
             logger.critical(e)
             sigterm_handler()
 
-    asyncio.ensure_future(async_exception(systray_app.start(), systray_app.log))
-    asyncio.ensure_future(async_exception(dbus_manager.start(), dbus_manager.log))
+    if not args.daemon_only:
+        asyncio.ensure_future(async_exception(systray_app.start(), systray_app.log))
+        asyncio.ensure_future(async_exception(dbus_manager.start(), dbus_manager.log))
     asyncio.ensure_future(async_exception(daemon.start('1.6.2'), daemon.log))
 
     with event_loop:

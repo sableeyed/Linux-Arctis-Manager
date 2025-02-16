@@ -1,0 +1,10 @@
+FROM fedora:41
+
+ENV DISPLAY=:99
+# ENV QT_DEBUG_PLUGINS=1
+
+RUN dnf install -y xorg-x11-server-Xvfb
+RUN useradd -m user
+RUN echo '%user ALL=(ALL) NOPASSWD:/usr/bin/dnf' >> /etc/sudoers
+
+USER user

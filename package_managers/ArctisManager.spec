@@ -5,11 +5,11 @@ Summary:        SteelSeries GG software replacement for Linux to manage Arctis d
 
 License:        GPL-3.0
 URL:            https://github.com/elegos/Linux-Arctis-Manager
-ExclusiveArch:      x86_64
+ExclusiveArch:  x86_64
 
 # Dipendenze richieste per il pacchetto
 BuildRequires:  bash, wget
-Requires:       bash, python3 >= 3.9, pulseaudio-utils
+Requires:       bash, pulseaudio-utils, libglvnd-glx, libglvnd-egl, fontconfig, libxkbcommon-x11, xcb-util-cursor, xcb-util-wm, xcb-util-keysyms
 
 %description
 SteelSeries GG software replacement to manage standard and advanced Arctis devices features, like ChatMix, ANC, wireless mode etc.
