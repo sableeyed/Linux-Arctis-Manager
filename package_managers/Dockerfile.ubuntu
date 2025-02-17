@@ -1,4 +1,5 @@
-FROM fedora:41
+ARG ubuntu_ver=25.04
+FROM ubuntu:${ubuntu_ver}
 
 ARG user_id=1000
 ARG group_id=1000
@@ -6,29 +7,24 @@ ARG group_id=1000
 ENV arctis_manager_ver=1.6.1
 ENV arctis_manager_ver_release=1
 
-RUN dnf update -y \
-    && dnf install -y fedora-packager rpmdevtools gcc wget
+RUN apt update && apt upgrade -y \
+    && apt install -y gcc python3.13 python3-pip python-is-python3
 
 RUN groupadd -o -g ${group_id} build \
     && useradd -o -m -u ${user_id} -g build build
 
 USER build
 
-COPY --chown=build:build entrypoint.fedora.sh /home/build/entrypoint.sh
+COPY --chown=build:build entrypoint/ubuntu.sh /home/build/entrypoint.sh
 RUN chmod +x /home/build/entrypoint.sh
 
 RUN echo 'PATH=${PATH}:${HOME}/.local/bin' >> /home/build/.bash_profile
-RUN python3 -m ensurepip \
-    && python3 -m pip install --upgrade pip \
-    && python3 -m pip install pipenv \
+RUN python3 -m pip install --user --break-system-packages --upgrade pip pipenv \
     && curl -fsSL https://pyenv.run | bash
 
-VOLUME /home/build/rpmbuild/RPMS
-VOLUME /home/build/rpmbuild/SRPMS
+VOLUME /home/build/output
 VOLUME /home/build/src
 
-WORKDIR /home/build/src
-
-RUN rpmdev-setuptree
+WORKDIR /home/build/build
 
 ENTRYPOINT [ "/home/build/entrypoint.sh" ]

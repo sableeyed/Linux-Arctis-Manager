@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- RPM build script for Fedora 41 ([fedora41.sh](./package_managers/fedora41.sh))
+- Package build script for (Fedora, Ubuntu)
 - Distro-specific docker-based tests, to test in clean environments (Fedora 41)
 - arctis-manager: added --daemon-only option (mainly for test purposes, but can be used to disable the UI)
 

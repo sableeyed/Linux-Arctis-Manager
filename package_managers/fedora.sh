@@ -4,9 +4,14 @@ set -e
 
 software_version=""
 software_release="1"
+fedora_version="41"
 
 while [ $# -gt 0 ]; do
     case "$1" in
+        --fedora-version)
+            fedora_version="$2"
+            shift 2
+        ;;
         --version)
             software_version="$2"
             shift 2
@@ -28,7 +33,7 @@ if [ -z "${software_version}" ]; then
 fi
 
 script_dir="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-rpm_build_image_name="arctis-manager-package-builder-fedora-41"
+rpm_build_image_name="arctis-manager-package-builder:fc${fedora_version}"
 
 function setup() {
     # Remove the old docker image
@@ -40,7 +45,8 @@ function setup() {
         -t "${rpm_build_image_name}" \
         --build-arg user_id="$(id -u)" \
         --build-arg group_id="$(id -g)" \
-        -f Dockerfile.fedora41 .
+        --build-arg fedora_ver="${fedora_version}" \
+        -f Dockerfile.fedora .
 }
 
 function rpm_build() {
@@ -48,9 +54,6 @@ function rpm_build() {
     SRPMS_DIR="${script_dir}/rpm/SRPMS"
     SRC_DIR="$(cd "${SRC_DIR}" && cd .. && pwd)"
 
-    if [ -d "${RPMS_DIR}" ]; then
-        rm -rf "${RPMS_DIR}"
-    fi
     mkdir -p "${RPMS_DIR}" "${SRPMS_DIR}"
 
     docker run --rm \
@@ -59,7 +62,7 @@ function rpm_build() {
         --volume "${RPMS_DIR}":/home/build/rpmbuild/RPMS \
         --volume "${SRPMS_DIR}":/home/build/rpmbuild/SRPMS \
         --volume "${SRC_DIR}":/home/build/src \
-        arctis-manager-package-builder-fedora-41
+        "${rpm_build_image_name}"
 }
 
 cd "${script_dir}"

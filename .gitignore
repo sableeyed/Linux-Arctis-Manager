@@ -4,4 +4,5 @@ dist/
 include/
 lib/
 lib64
+package_managers/deb/
 package_managers/rpm/

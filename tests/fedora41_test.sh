@@ -23,12 +23,11 @@ while [ $# -gt 0 ]; do
 done
 
 # 1. Build the rpm archives
-../package_managers/fedora41.sh --version "${software_version}" --release "${software_release}"
+../package_managers/fedora.sh --fedora-version 41 --version "${software_version}" --release "${software_release}"
 
 # 2. Install the package and try to run the application in a clean container.
 # It is expected to exit with exit code 101 (device not found). Otherwise the test will fail.
 
-# Extra dependencies are required to run an x11 server within docker
 set +e
 docker build --tag arctis-manager-test:fc41 -f Dockerfile.fedora41 .
 docker run --rm \

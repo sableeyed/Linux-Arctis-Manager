@@ -1,0 +1,8 @@
+Package: arctis-manager
+Version: VERSION_PLACEHOLDER
+Section: utils
+Architecture: amd64
+Depends: bash, pulseaudio-utils, libglvnd-glx, libglvnd-egl, fontconfig, libxkbcommon-x11, xcb-util-cursor, xcb-util-wm, xcb-util-keysyms
+Maintainer: Giacomo Furlan <arctis-manager@giacomofurlan.name>
+Description: SteelSeries Arctis device manager
+  Replaces the original GG/Engine software on Linux, providing device initialization and a UI with status and configuration toggles.
