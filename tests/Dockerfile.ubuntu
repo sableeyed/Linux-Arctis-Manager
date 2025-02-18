@@ -1,0 +1,16 @@
+ARG ubuntu_ver=25.04
+FROM ubuntu:${ubuntu_ver}
+
+ENV DISPLAY=:99
+ENV QT_DEBUG_PLUGINS=1
+
+RUN apt update && apt upgrade -y && apt install -y sudo xvfb language-pack-en
+RUN update-locale LANG="en_US.UTF-8" LANGUAGE="en_US" \
+    && dpkg-reconfigure -f noninteractive locales \
+    && echo 'export LANG="en_US.UTF-8"' >> /etc/bash.bashrc \
+    && echo 'export LANGUAGE="en_US.UTF-8"' >> /etc/bash.bashrc \
+    && echo 'export LC_ALL="en_US.UTF-8"' >> /etc/bash.bashrc
+RUN useradd -m user
+RUN echo '%user ALL=NOPASSWD: /usr/bin/apt' >> /etc/sudoers
+
+USER user

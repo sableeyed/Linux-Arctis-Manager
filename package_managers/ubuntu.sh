@@ -41,7 +41,8 @@ function setup() {
     if [ -n "${img}" ]; then docker rmi "${deb_build_image_name}"; fi
 
     # Build the new docker image
-    docker build --no-cache \
+    # docker build --no-cache \
+    docker build \
         -t "${deb_build_image_name}" \
         --build-arg user_id="$(id -u)" \
         --build-arg group_id="$(id -g)" \

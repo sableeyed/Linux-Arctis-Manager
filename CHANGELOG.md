@@ -5,17 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [Unreleased 1.6.2-2]
 
 ### Added
 
 - Package build script for (Fedora, Ubuntu)
-- Distro-specific docker-based tests, to test in clean environments (Fedora 41)
+- Distro-specific docker-based tests, to test in clean environments (Fedora, Ubuntu)
+- [Build script](./package_managers/build.py) to build all supported packages (experimental)
 - arctis-manager: added --daemon-only option (mainly for test purposes, but can be used to disable the UI)
+- VERSION.ini to better store and the version (WIP)
 
 ### Changed
 
 - In case of device error during the identification process, if something goes wrong, reset the selected device and log the error
+- Embedded Qt6/plaform static libraries, generated on OS-basis, to avoid breaking dependencies on qt libs, which might not be distributed otherwise (slightly bigger package)
 
 ## [1.6.2]
 
