@@ -46,7 +46,7 @@ docker run --rm \
     bash -c ' \
         Xvfb :99 -screen 0 640x480x8 -nolisten tcp & xvfb_pid=$!; \
         trap "kill $xvfb_pid" EXIT; \
-        sudo apt install -y /debs/arctis-manager-'"${software_version}"'-ubuntu-'"${ubuntu-version}"'-'"${software_release}"'.deb \
+        sudo apt install -y /debs/arctis-manager-'"${software_version}"'-'"${software_release}"'.deb \
         && export LANG=en_US.UTF-8 \
         && env \
         && arctis-manager --verbose --daemon-only; \
