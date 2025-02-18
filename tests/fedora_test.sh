@@ -41,7 +41,7 @@ docker run --rm \
     bash -c ' \
         Xvfb :99 -screen 0 640x480x8 -nolisten tcp & xvfb_pid=$!; \
         trap "kill $xvfb_pid" EXIT; \
-        sudo dnf install -y /rpms/x86_64/arctis-manager-*.rpm \
+        sudo dnf install -y /rpms/x86_64/arctis-manager-'"${software_version}"'-'"${software_release}"'.fc'"${fedora_version}"'.x86_64.rpm \
         && LANG=en_US.UTF-8 arctis-manager --verbose --daemon-only; \
         exit_code=$?; \
         kill $xvfb_pid; \

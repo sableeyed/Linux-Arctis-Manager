@@ -2,7 +2,7 @@ ARG ubuntu_ver=25.04
 FROM ubuntu:${ubuntu_ver}
 
 ENV DISPLAY=:99
-ENV QT_DEBUG_PLUGINS=1
+# ENV QT_DEBUG_PLUGINS=1
 
 RUN apt update && apt upgrade -y && apt install -y sudo xvfb language-pack-en
 RUN update-locale LANG="en_US.UTF-8" LANGUAGE="en_US" \
