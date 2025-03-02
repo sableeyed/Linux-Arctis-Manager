@@ -110,7 +110,7 @@ async def get_init_packets(usbpcap_interfaces: list[str], blacklist: list[str]) 
 
     return packets
 
-async def get_features_set(usbpcap_interfaces: list[str], device_id: Optional[str], features: list[Feature] = []) -> list[Feature]:
+async def get_features_set(usbpcap_interfaces: list[str], device_id: Optional[str], blacklist: list[str], features: list[Feature] = []) -> list[Feature]:
     if not features:
         print('In this part, the application will attempt to detect the configuration packets sent by the GG software.')
         print('First of all, open the SteelSeries GG software, enter the Engine section and then the Arctis device\'s settings.')
@@ -124,6 +124,9 @@ async def get_features_set(usbpcap_interfaces: list[str], device_id: Optional[st
     filters = []
     if device_id:
         filters.append(f'usb.addr == {device_id}')
+    else:
+        # In case of missing previously missed init packets (that might not exist)
+        filters.extend([f'usb.addr != "{id}"' for id in blacklist])
     
     feature = next((f for f in features if f.name == feature_name), None)
     if feature is None:
@@ -155,7 +158,7 @@ async def get_features_set(usbpcap_interfaces: list[str], device_id: Optional[st
     if input('Do you have any other feature you want to catalog? (y/N): ').lower() in ['n', 'no', '']:
         return features
     
-    return await get_features_set(usbpcap_interfaces, device_id, features)
+    return await get_features_set(usbpcap_interfaces, device_id, blacklist, features)
 
 def markdown_page(device_name: str, init_packets: list[TSharkPacket], features: list[Feature]) -> str:
     md = f'# {device_name}\n\n'
@@ -218,7 +221,7 @@ async def main():
         print(f'Detected device ID: {device_id} (you can use this as a Wireshark filter: usb.addr == "{device_id}").')
 
     print_step(4, 'Device-specific setting configurations.')
-    features = await get_features_set(usbpcap_interfaces, device_id)
+    features = await get_features_set(usbpcap_interfaces, device_id, blacklist)
 
     device_name = input('Enter the device name (e.g. "Arctis 7"): ')
 

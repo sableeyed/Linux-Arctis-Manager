@@ -68,7 +68,7 @@ async def read_usbpcap_interface_generator(interface: str, *filters: list[str], 
         if f"Capturing on '{interface}'" in buffer_stderr:
             break
 
-        print_loading(idx, f'Waiting for {interface} listening to start...')
+        await print_loading(idx, f'Waiting for {interface} listening to start...')
         idx += 1
     
     print(f'Capturing on {interface}')
