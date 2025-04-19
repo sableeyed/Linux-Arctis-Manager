@@ -15,4 +15,6 @@ RestartSec=1
 
 [Install]
 WantedBy=dev-steelseries-arctis.device
-WantedBy=graphical.target
+WantedBy=graphical-session.target
+Requisite=graphical-session.target
+After=graphical-session.target
