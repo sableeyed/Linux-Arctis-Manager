@@ -14,7 +14,7 @@ software_release = config.get('version', 'RELEASE')
 test_path = Path(__file__).parent.parent.joinpath('tests')
 
 # Fedora builds
-for version in [40, 41]:
+for version in [40, 41, 42]:
     run = subprocess.run(['./fedora_test.sh', '--fedora-version', str(version), '--version', software_version, '--release', software_release], cwd=test_path)
     if run.returncode != 0:
         shutil.rmtree(
