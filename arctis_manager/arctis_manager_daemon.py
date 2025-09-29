@@ -11,12 +11,12 @@ import sys
 import usb.core
 import arctis_manager.devices
 
-PA_NODE_NAME = {
+DEV_PA_NODES = {
     'game': 'Arctis_Game',
     'chat': 'Arctis_Chat'
 }
-DONGLE_REFRESH_RATE = 5
-DEFAULT_SINK = PA_NODE_NAME['chat']
+DONGLE_REFRESH_SECONDS = 5
+DEFAULT_SINK = DEV_PA_NODES['game']
 
 
 class ArctisManagerDaemon:
@@ -79,7 +79,7 @@ class ArctisManagerDaemon:
         # Blindly try to cleanup dirty nodes by removing the ones we're going to create
         self.log.debug('Cleaning up PulseAudio nodes.')
         try:
-            for node in PA_NODE_NAME.values():
+            for node in DEV_PA_NODES.values():
                 os.system(f'pw-cli destroy {node} 1>/dev/null 2>&1')
         finally:
             pass
@@ -111,7 +111,7 @@ class ArctisManagerDaemon:
         # Create the game and chat nodes
         self.log.info('Creating PulseAudio Audio/Sink nodes.')
         try:
-            for node_tag, node_name in PA_NODE_NAME.items():
+            for node_tag, node_name in DEV_PA_NODES.items():
                 os.system(f"""pw-cli create-node adapter '{{
                     factory.name=support.null-audio-sink
                     node.name={node_name}
@@ -127,7 +127,7 @@ class ArctisManagerDaemon:
             sys.exit(103)
 
         self.log.info('Setting PulseAudio channel links.')
-        for node in PA_NODE_NAME.values():
+        for node in DEV_PA_NODES.values():
             try:
                 for position in self.device_manager.get_audio_position():
                     pos_name = position.value
@@ -257,8 +257,8 @@ class ArctisManagerDaemon:
                 default_device_volume = "{}%".format(self._normalize_audio(device_state.game_volume, device_state.game_mix))
                 virtual_device_volume = "{}%".format(self._normalize_audio(device_state.chat_volume, device_state.chat_mix))
 
-                os.system(f'pactl set-sink-volume {PA_NODE_NAME['game']} {default_device_volume}')
-                os.system(f'pactl set-sink-volume {PA_NODE_NAME['chat']} {virtual_device_volume}')
+                os.system(f'pactl set-sink-volume {DEV_PA_NODES['game']} {default_device_volume}')
+                os.system(f'pactl set-sink-volume {DEV_PA_NODES['chat']} {virtual_device_volume}')
 
                 # Propagate the device status to any registered listener
                 if device_state.device_status is not None:
@@ -294,7 +294,7 @@ class ArctisManagerDaemon:
         while not self._shutdown:
             try:
                 self.device.write(commands_endpoint_address, message)
-                await asyncio.sleep(DONGLE_REFRESH_RATE)
+                await asyncio.sleep(DONGLE_REFRESH_SECONDS)
             except Exception as e:
                 if not isinstance(e, usb.core.USBTimeoutError):
                     if isinstance(e, usb.core.USBError) and e.errno == 19:  # device not found
