@@ -24,4 +24,8 @@ KERNEL=="event*", SUBSYSTEM=="input", SUBSYSTEMS=="usb", ATTRS{idProduct}=="12e0
 SUBSYSTEM=="usb", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="12e5", MODE="0666"
 KERNEL=="event*", SUBSYSTEM=="input", SUBSYSTEMS=="usb", ATTRS{idProduct}=="12e5", ATTRS{idVendor}=="1038", TAG+="symlink", SYMLINK+="steelseries/arctis", TAG+="systemd"
 
+# Arctis Pro
+SUBSYSTEM=="usb", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="1252", MODE="0666"
+KERNEL=="event*", SUBSYSTEM=="input", SUBSYSTEMS=="usb", ATTRS{idProduct}=="1252", ATTRS{idVendor}=="1038", TAG+="symlink", SYMLINK+="steelseries/arctis", TAG+="systemd"
+
 LABEL="local_end"
